@@ -7,7 +7,7 @@
     android:padding="16dp">
 
     <TextView
-        android:text="Friends Leaderboard"
+        android:text="@string/friends_leaderboard"
         android:textSize="18sp"
         android:textStyle="bold"
         android:layout_width="wrap_content"
@@ -15,17 +15,17 @@
         android:layout_marginBottom="12dp"/>
 
     <TextView
-        android:text="1. Maverick - 20 Days"
+        android:text="@string/sample6"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"/>
 
     <TextView
-        android:text="2. Hana - 15 Days"
+        android:text="@string/sample5"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"/>
 
     <TextView
-        android:text="3. Ced - 10 Days"
+        android:text="@string/sample4"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"/>
 </LinearLayout>

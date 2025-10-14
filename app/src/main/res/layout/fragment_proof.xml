@@ -6,7 +6,7 @@
     android:layout_height="match_parent">
 
     <TextView
-        android:text="Proof Submission"
+        android:text="@string/proof_submission"
         android:textSize="20sp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"/>
@@ -16,18 +16,18 @@
         android:layout_width="200dp"
         android:layout_height="200dp"
         android:layout_marginTop="12dp"
-        android:contentDescription="captured"/>
+        android:contentDescription="@string/captured"/>
 
     <Button
         android:id="@+id/captureBtn"
-        android:text="Capture Photo (must be live)"
+        android:text="@string/capture_photo"
         android:layout_marginTop="12dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 
     <Button
         android:id="@+id/submitProofBtn"
-        android:text="Submit Proof (demo)"
+        android:text="@string/submit_proof"
         android:layout_marginTop="8dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>

@@ -13,7 +13,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="SnapBit"
+            android:text="@string/snapbit"
             android:textSize="32sp"
             android:layout_marginTop="40dp"
             android:textStyle="bold"/>
@@ -23,14 +23,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:hint="Email"
+            android:hint="@string/email"
             android:inputType="textEmailAddress"/>
 
         <EditText
             android:id="@+id/passwordEt"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Password"
+            android:hint="@string/password"
             android:inputType="textPassword"/>
 
         <Button
@@ -38,13 +38,13 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="Log In"/>
+            android:text="@string/log_in"/>
 
         <Button
             android:id="@+id/createAccountBtn"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Create New Account"/>
+            android:text="@string/create_new_account"/>
     </LinearLayout>
 </ScrollView>

@@ -6,19 +6,19 @@
     android:layout_height="match_parent">
 
     <TextView
-        android:text="Dashboard"
+        android:text="@string/dashboard"
         android:textSize="20sp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"/>
 
     <TextView
-        android:text="Total Streaks: 10"
+        android:text="@string/total_streaks_10"
         android:layout_marginTop="12dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"/>
 
     <TextView
-        android:text="Completion Rate: 85%"
+        android:text="@string/completion_rate_85"
         android:layout_marginTop="8dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"/>

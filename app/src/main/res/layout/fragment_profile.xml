@@ -6,7 +6,7 @@
     android:layout_height="match_parent">
 
     <TextView
-        android:text="Profile"
+        android:text="@string/profile"
         android:textSize="20sp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"/>
@@ -18,14 +18,14 @@
         android:layout_marginTop="12dp"/>
 
     <TextView
-        android:text="Name: Your Name"
+        android:text="@string/your_name"
         android:layout_marginTop="8dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"/>
 
     <Button
         android:id="@+id/editProfileBtn"
-        android:text="Edit Profile"
+        android:text="@string/edit_profile"
         android:layout_marginTop="12dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
