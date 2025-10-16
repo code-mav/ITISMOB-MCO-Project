@@ -1,56 +1,64 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/white"
-    android:padding="24dp"
-    android:orientation="vertical"
-    android:gravity="center_horizontal">
+    android:background="#222222"
+    tools:context=".ProofFragment">
 
-    <!-- Title -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/proof_submission"
-        android:textSize="26sp"
-        android:textStyle="bold"
-        android:textColor="@android:color/black"
-        android:layout_marginBottom="16dp"/>
+    <androidx.cardview.widget.CardView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:cardBackgroundColor="#E7E7E7"
+        app:cardUseCompatPadding="true"
+        app:cardCornerRadius="6dp"
+        app:layout_constraintWidth_percent="0.82"
+        app:layout_constraintHeight_percent="0.86"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
-    <!-- Captured Image -->
-    <ImageView
-        android:id="@+id/capturedIv"
-        android:layout_width="240dp"
-        android:layout_height="240dp"
-        android:layout_marginTop="12dp"
-        android:background="#EEEEEE"
-        android:contentDescription="@string/captured"
-        android:scaleType="centerCrop"
-        android:elevation="2dp"/>
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="20dp">
 
-    <!-- Capture Button -->
-    <Button
-        android:id="@+id/captureBtn"
-        android:layout_width="match_parent"
-        android:layout_height="54dp"
-        android:layout_marginTop="24dp"
-        android:text="@string/capture_photo"
-        android:textSize="16sp"
-        android:textAllCaps="false"
-        android:backgroundTint="?attr/colorPrimary"
-        android:textColor="@android:color/white"
-        android:elevation="2dp"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Habit Proof"
+                android:textStyle="bold"
+                android:textSize="20sp"
+                android:textColor="#000000"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent" />
 
-    <!-- Submit Button -->
-    <Button
-        android:id="@+id/submitProofBtn"
-        android:layout_width="match_parent"
-        android:layout_height="54dp"
-        android:layout_marginTop="12dp"
-        android:text="@string/submit_proof"
-        android:textSize="16sp"
-        android:textAllCaps="false"
-        android:backgroundTint="@android:color/darker_gray"
-        android:textColor="@android:color/white"
-        android:elevation="2dp"/>
-</LinearLayout>
+            <ImageView
+                android:id="@+id/capturedIv"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:scaleType="centerCrop"
+                android:background="#CCCCCC"
+                app:layout_constraintTop_toBottomOf="@+id/text1"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintBottom_toTopOf="@id/captureBtn"
+                android:layout_marginTop="48dp"
+                android:layout_marginBottom="16dp"/>
+
+            <Button
+                android:id="@+id/captureBtn"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:text="Capture Photo"
+                android:textAllCaps="false"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"/>
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.cardview.widget.CardView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
