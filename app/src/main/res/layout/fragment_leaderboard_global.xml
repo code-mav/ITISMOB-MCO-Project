@@ -3,29 +3,26 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:gravity="top|center_horizontal"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:background="#E7E7E7">
 
-    <TextView
-        android:text="@string/global_leaderboard"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="12dp"/>
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:text="1st - User A - 40 Days"
+        android:textAllCaps="false"/>
 
-    <TextView
-        android:text="@string/sample1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:text="2nd - User B - 35 Days"
+        android:textAllCaps="false"
+        android:layout_marginTop="8dp"/>
 
-    <TextView
-        android:text="@string/sample2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
-
-    <TextView
-        android:text="@string/sample3"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:text="3rd - User C - 32 Days"
+        android:textAllCaps="false"
+        android:layout_marginTop="8dp"/>
 </LinearLayout>
