@@ -1,58 +1,94 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:padding="20dp"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@android:color/white"
+    android:padding="24dp">
 
     <LinearLayout
-        android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
+        <!-- Title -->
         <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:text="@string/create_habit"
-            android:textSize="20sp"
-            android:layout_marginBottom="12dp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:textSize="26sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            android:layout_marginBottom="24dp"/>
 
+        <!-- Habit Name -->
         <EditText
+            android:id="@+id/habitNameEt"
+            android:layout_width="match_parent"
+            android:layout_height="54dp"
             android:hint="@string/habit_name"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:background="@android:drawable/edit_text"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:textSize="16sp"/>
 
+        <!-- Category -->
         <EditText
-            android:hint="@string/category"
+            android:id="@+id/categoryEt"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:layout_height="54dp"
+            android:layout_marginTop="12dp"
+            android:hint="@string/category"
+            android:background="@android:drawable/edit_text"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:textSize="16sp"/>
 
+        <!-- Frequency Label -->
         <TextView
-            android:text="@string/frequency"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:text="@string/frequency"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#333333"
+            android:layout_marginTop="20dp"/>
 
+        <!-- Radio Buttons (MUTUALLY EXCLUSIVE) -->
         <RadioGroup
             android:id="@+id/freqGroup"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
 
             <RadioButton
+                android:id="@+id/radioDaily"
                 android:text="@string/daily"
+                android:textSize="16sp"
                 android:checked="true"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"/>
 
             <RadioButton
+                android:id="@+id/radioWeekly"
                 android:text="@string/weekly"
+                android:textSize="16sp"
+                android:layout_marginStart="20dp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"/>
         </RadioGroup>
 
+        <!-- Save Button -->
         <Button
             android:id="@+id/saveHabitBtn"
-            android:text="@string/save_habit"
-            android:layout_marginTop="12dp"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:layout_height="54dp"
+            android:layout_marginTop="28dp"
+            android:text="@string/save_habit"
+            android:textSize="18sp"
+            android:textAllCaps="false"
+            android:backgroundTint="?attr/colorPrimary"
+            android:textColor="@android:color/white"
+            android:elevation="2dp"/>
     </LinearLayout>
 </ScrollView>

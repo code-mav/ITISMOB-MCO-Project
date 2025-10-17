@@ -1,47 +1,99 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:padding="20dp"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@android:color/white"
+    android:padding="24dp">
 
     <LinearLayout
-        android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal">
 
+        <!-- Placeholder Logo -->
+        <ImageView
+            android:id="@+id/logoIv"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_marginTop="40dp"
+            android:src="@android:drawable/sym_def_app_icon"
+            android:contentDescription="@string/app_logo"
+            android:scaleType="centerInside" />
+
+        <!-- Register Title -->
         <TextView
-            android:text="@string/register"
-            android:textSize="24sp"
-            android:layout_marginBottom="12dp"
+            android:id="@+id/registerTitle"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:text="@string/register"
+            android:textSize="30sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="32dp"/>
 
+        <!-- Full Name -->
         <EditText
+            android:id="@+id/fullNameEt"
+            android:layout_width="match_parent"
+            android:layout_height="54dp"
             android:hint="@string/full_name"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:background="@android:drawable/edit_text"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:textSize="16sp"/>
 
+        <!-- Birthday -->
         <EditText
+            android:id="@+id/birthdayEt"
+            android:layout_width="match_parent"
+            android:layout_height="54dp"
+            android:layout_marginTop="12dp"
             android:hint="@string/birthday"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:background="@android:drawable/edit_text"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:textSize="16sp"/>
 
+        <!-- Email -->
         <EditText
+            android:id="@+id/emailEt"
+            android:layout_width="match_parent"
+            android:layout_height="54dp"
+            android:layout_marginTop="12dp"
             android:hint="@string/email"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:inputType="textEmailAddress"
+            android:background="@android:drawable/edit_text"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:textSize="16sp"/>
 
+        <!-- Password -->
         <EditText
+            android:id="@+id/passwordEt"
+            android:layout_width="match_parent"
+            android:layout_height="54dp"
+            android:layout_marginTop="12dp"
             android:hint="@string/password"
             android:inputType="textPassword"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:background="@android:drawable/edit_text"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:textSize="16sp"/>
 
+        <!-- Register Button -->
         <Button
             android:id="@+id/registerBtn"
-            android:text="@string/register"
-            android:layout_marginTop="12dp"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:layout_height="54dp"
+            android:layout_marginTop="24dp"
+            android:text="@string/register"
+            android:textSize="18sp"
+            android:textAllCaps="false"
+            android:backgroundTint="?attr/colorPrimary"
+            android:textColor="@android:color/white"
+            android:elevation="2dp"/>
+
     </LinearLayout>
 </ScrollView>

@@ -5,28 +5,37 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:gravity="top|center_horizontal"
-    android:padding="16dp">
+    android:padding="20dp"
+    android:background="@android:color/white">
 
+    <!-- Title -->
     <TextView
-        android:text="@string/leaderboard"
-        android:textSize="22sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="8dp"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:text="@string/leaderboard"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/black"
+        android:layout_marginBottom="12dp"/>
 
+    <!-- Tab Layout -->
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/tabLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:tabIndicatorColor="@android:color/holo_blue_dark"
-        app:tabSelectedTextColor="@android:color/holo_blue_dark"
-        app:tabTextColor="@android:color/darker_gray"/>
+        app:tabIndicatorColor="?attr/colorPrimary"
+        app:tabSelectedTextColor="?attr/colorPrimary"
+        app:tabTextColor="@android:color/darker_gray"
+        app:tabIndicatorHeight="4dp"
+        app:tabMode="fixed"
+        android:background="@drawable/tab_bg"
+        android:elevation="2dp"/>
 
+    <!-- Pager for switching between tabs -->
     <androidx.viewpager2.widget.ViewPager2
         android:id="@+id/viewPager"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:layout_marginTop="8dp"/>
+        android:layout_marginTop="16dp"/>
 </LinearLayout>

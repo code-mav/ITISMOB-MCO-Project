@@ -1,38 +1,97 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:padding="20dp"
-    android:orientation="vertical"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@android:color/white"
+    android:padding="20dp">
 
-    <TextView
-        android:text="@string/title"
-        android:textSize="20sp"
-        android:layout_marginBottom="16dp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
-
-    <TextView
-        android:text="@string/habit2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
-
-    <TextView
-        android:text="@string/habit1"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="12dp"/>
+        android:orientation="vertical"
+        android:gravity="center_horizontal">
 
-    <Button
-        android:id="@+id/createHabitBtn"
-        android:text="@string/create_habit"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        <!-- Placeholder Logo -->
+        <ImageView
+            android:id="@+id/logoIv"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_marginTop="32dp"
+            android:src="@android:drawable/sym_def_app_icon"
+            android:contentDescription="@string/app_logo"
+            android:scaleType="centerInside" />
 
-    <Button
-        android:id="@+id/submitProofBtn"
-        android:text="@string/submit_proof"
-        android:layout_marginTop="8dp"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
-</LinearLayout>
+        <!-- App Title -->
+        <TextView
+            android:id="@+id/appTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/title"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:textColor="#000000"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Habit Cards -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="24dp">
+
+            <!-- Habit 1 -->
+            <TextView
+                android:id="@+id/habit1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/habit2"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="#333333"
+                android:background="@drawable/habit_box_bg"
+                android:padding="16dp"
+                android:layout_marginBottom="12dp"
+                android:gravity="center_vertical"/>
+
+            <!-- Habit 2 -->
+            <TextView
+                android:id="@+id/habit2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/habit1"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="#333333"
+                android:background="@drawable/habit_box_bg"
+                android:padding="16dp"
+                android:layout_marginBottom="12dp"
+                android:gravity="center_vertical"/>
+        </LinearLayout>
+
+        <!-- Buttons -->
+        <Button
+            android:id="@+id/createHabitBtn"
+            android:layout_width="match_parent"
+            android:layout_height="54dp"
+            android:text="@string/create_habit"
+            android:textAllCaps="false"
+            android:textSize="16sp"
+            android:backgroundTint="?attr/colorPrimary"
+            android:textColor="@android:color/white"
+            android:elevation="2dp"/>
+
+        <Button
+            android:id="@+id/submitProofBtn"
+            android:layout_width="match_parent"
+            android:layout_height="54dp"
+            android:layout_marginTop="12dp"
+            android:text="@string/submit_proof"
+            android:textAllCaps="false"
+            android:textSize="16sp"
+            android:backgroundTint="@android:color/darker_gray"
+            android:textColor="@android:color/white"
+            android:elevation="2dp"/>
+
+    </LinearLayout>
+</ScrollView>
