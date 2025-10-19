@@ -1,0 +1,22 @@
+<resources>
+    <string-array name="sample_dates">
+        <item>Dates</item>
+        <item>2025-10-15</item>
+        <item>2025-10-16</item>
+        <item>2025-10-17</item>
+        <item>2025-10-18</item>
+    </string-array>
+
+    <string-array name="sample_habits">
+        <item>Habits</item>
+        <item>Gym</item>
+        <item>Study</item>
+    </string-array>
+
+    <string-array name="sample_friends">
+        <item>Friends</item>
+        <item>Maverick</item>
+        <item>Hana</item>
+        <item>Ced</item>
+    </string-array>
+</resources>
