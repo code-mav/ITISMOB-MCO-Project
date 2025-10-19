@@ -33,7 +33,11 @@ public class MainActivity extends AppCompatActivity {
                 selected = new LeaderboardFragment();
             } else if (id == R.id.nav_friends) {
                 selected = new FriendsFragment();
-            } else if (id == R.id.nav_profile) {
+            }
+            else if (id == R.id.nav_gallery) {
+                selected = new GalleryFragment();
+            }
+            else if (id == R.id.nav_profile) {
                 selected = new ProfileFragment();
             }
 
