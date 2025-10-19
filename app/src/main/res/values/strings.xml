@@ -57,11 +57,11 @@
     <string name="sampleactivity2">📖 Study Habit Updated</string>
     <string name="sampleactivity2_deets">You studied 2 hours today. Great job!</string>
     <string name="samplename1">🥇 1. Maverick</string>
-    <string name="samplename1_streak">— 20 Days</string>
+    <string name="samplename1_streak">— 20 Days (Study)</string>
     <string name="samplename2">🥈 2. Hana</string>
-    <string name="samplename2_streak">— 15 Days</string>
+    <string name="samplename2_streak">— 15 Days (Gym)</string>
     <string name="samplename3">🥉 3. Ced</string>
-    <string name="samplename3_streak">— 10 Days</string>
+    <string name="samplename3_streak">— 10 Days (Gym)</string>
     <string name="samplename4">🥇 1. Bourgy</string>
     <string name="samplename4_streak">— 30 Days</string>
     <string name="samplename5">🥈 2. Spongebob</string>
@@ -69,4 +69,11 @@
     <string name="samplename6">🥉 3. Bruce Lee</string>
     <string name="samplename6_streak">— 22 Days</string>
     <string name="log_out">Log Out</string>
+
+
+    <string-array name="sample_streaks">
+        <item>Study</item>
+        <item>Gym</item>
+    </string-array>
+
 </resources>
