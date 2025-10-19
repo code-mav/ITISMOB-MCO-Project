@@ -16,7 +16,8 @@
         android:text="Habits"
         android:textSize="26sp"
         android:textStyle="bold"
-        android:padding="16dp"
+        android:paddingTop="35dp"
+        android:paddingBottom="12dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
@@ -78,4 +79,3 @@
         tools:listitem="@layout/item_photo_grid" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
-
