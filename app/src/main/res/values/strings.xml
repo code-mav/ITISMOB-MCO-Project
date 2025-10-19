@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">MCO Project</string>
-    <string name="global_leaderboard">Global Leaderboard</string>
+    <string name="global_leaderboard">Global Leaderboard (TBD)</string>
     <string name="friends_leaderboard">Friends Leaderboard</string>
     <string name="log_in">Log In</string>
     <string name="create_new_account">Create New Account</string>
@@ -11,7 +11,7 @@
     <string name="edit_profile">Edit Profile</string>
     <string name="profile">Profile</string>
     <string name="capture_photo">Capture Photo (must be live)</string>
-    <string name="submit_proof">Submit Proof (demo)</string>
+    <string name="submit_proof">Snap! (demo)</string>
     <string name="captured">captured</string>
     <string name="proof_submission">Proof Submission</string>
     <string name="register">Register</string>
@@ -28,9 +28,10 @@
     <string name="friend_requests">Friend Requests</string>
     <string name="search_users">Search users…</string>
     <string name="create_habit">Create Habit</string>
-    <string name="habit1">Study - 2 Days Streak</string>
+    <string name="habit1">Study - 20 Days Streak</string>
     <string name="habit2">Gym - 3 Days Streak</string>
-    <string name="title">SnapBit — Your Habits Today</string>
+    <string name="title">SnapBit</string>
+    <string name="subtitle">\n Capture and Grow with Your Habits</string>
     <string name="save_changes">Save Changes</string>
     <string name="bio">Bio</string>
     <string name="name">Name</string>
@@ -56,11 +57,11 @@
     <string name="sampleactivity2">📖 Study Habit Updated</string>
     <string name="sampleactivity2_deets">You studied 2 hours today. Great job!</string>
     <string name="samplename1">🥇 1. Maverick</string>
-    <string name="samplename1_streak">— 20 Days</string>
+    <string name="samplename1_streak">— 20 Days (Study)</string>
     <string name="samplename2">🥈 2. Hana</string>
-    <string name="samplename2_streak">— 15 Days</string>
+    <string name="samplename2_streak">— 15 Days (Gym)</string>
     <string name="samplename3">🥉 3. Ced</string>
-    <string name="samplename3_streak">— 10 Days</string>
+    <string name="samplename3_streak">— 10 Days (Gym)</string>
     <string name="samplename4">🥇 1. Bourgy</string>
     <string name="samplename4_streak">— 30 Days</string>
     <string name="samplename5">🥈 2. Spongebob</string>
@@ -68,4 +69,11 @@
     <string name="samplename6">🥉 3. Bruce Lee</string>
     <string name="samplename6_streak">— 22 Days</string>
     <string name="log_out">Log Out</string>
+
+
+    <string-array name="sample_streaks">
+        <item>Study</item>
+        <item>Gym</item>
+    </string-array>
+
 </resources>
