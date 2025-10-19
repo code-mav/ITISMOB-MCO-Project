@@ -128,6 +128,19 @@
                     android:layout_marginTop="4dp"/>
             </LinearLayout>
         </LinearLayout>
+		
+		<!-- Dashboard -->
+		<Button
+			android:id="@+id/openDashboardBtn"
+			android:layout_width="match_parent"
+			android:layout_height="54dp"
+			android:text="View Dashboard"
+			android:textAllCaps="false"
+			android:textSize="16sp"
+			android:backgroundTint="?attr/colorPrimary"
+			android:textColor="@android:color/white"
+			android:elevation="2dp"
+			android:layout_marginTop="12dp"/>
 
         <!-- Edit button -->
         <Button
