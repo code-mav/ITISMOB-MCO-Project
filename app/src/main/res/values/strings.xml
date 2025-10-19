@@ -11,7 +11,7 @@
     <string name="edit_profile">Edit Profile</string>
     <string name="profile">Profile</string>
     <string name="capture_photo">Capture Photo (must be live)</string>
-    <string name="submit_proof">Submit Proof (demo)</string>
+    <string name="submit_proof">Snap! (demo)</string>
     <string name="captured">captured</string>
     <string name="proof_submission">Proof Submission</string>
     <string name="register">Register</string>
@@ -30,7 +30,8 @@
     <string name="create_habit">Create Habit</string>
     <string name="habit1">Study - 20 Days Streak</string>
     <string name="habit2">Gym - 3 Days Streak</string>
-    <string name="title">SnapBit — Your Habits Today</string>
+    <string name="title">SnapBit</string>
+    <string name="subtitle">\n Capture and Grow with Your Habits</string>
     <string name="save_changes">Save Changes</string>
     <string name="bio">Bio</string>
     <string name="name">Name</string>
