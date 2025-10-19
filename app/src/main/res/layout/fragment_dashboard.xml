@@ -19,48 +19,222 @@
             android:text="@string/dashboard"
             android:textSize="26sp"
             android:textStyle="bold"
+            android:paddingTop="15dp"
             android:textColor="@android:color/black"
-            android:layout_marginBottom="24dp"/>
+            android:layout_marginBottom="16dp"/>
 
-        <!-- Streak Image -->
+        <!-- Streak Logo -->
         <ImageView
             android:id="@+id/streakPlaceholderIv"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
             android:src="@drawable/ic_streak"
             android:contentDescription="@string/streak_placeholder"
-            android:layout_marginBottom="16dp"
+            android:layout_marginBottom="12dp"
             android:scaleType="centerInside" />
 
-        <!-- Stats Card -->
-        <LinearLayout
+        <!-- Streak Timer Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/streakTimerCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="#EEEEEE"
-            android:padding="16dp"
             android:layout_marginBottom="24dp"
-            android:gravity="center_horizontal"
-            android:elevation="1dp">
+            app:cardCornerRadius="16dp"
+            app:cardElevation="3dp"
+            app:strokeColor="#E0E0E0"
+            app:strokeWidth="1dp">
 
-            <TextView
-                android:id="@+id/totalStreaks"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/total_streaks_10"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:textColor="#333333"
-                android:layout_marginBottom="8dp"/>
+                android:orientation="vertical"
+                android:gravity="center_horizontal"
+                android:padding="16dp">
 
-            <TextView
-                android:id="@+id/completionRate"
-                android:layout_width="wrap_content"
+                <TextView
+                    android:id="@+id/tvStreakTimerTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="⏱ Time left to maintain streak"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="#000000"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:id="@+id/tvStreakTimer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="23:59:59"
+                    android:textSize="28sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/black"
+                    android:layout_marginBottom="12dp" />
+
+                <ProgressBar
+                    android:id="@+id/streakProgressBar"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="8dp"
+                    android:progress="100"
+                    android:max="100"
+                    android:progressTint="@color/black"
+                    android:backgroundTint="#E0E0E0"
+                    android:layout_marginBottom="8dp"/>
+
+                <TextView
+                    android:id="@+id/tvStreakReminder"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="All streak timers share the same time per day."
+                    android:textSize="13sp"
+                    android:textColor="#777777"
+                    android:gravity="center"
+                    android:layout_marginTop="4dp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Current Streaks Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/currentStreaksCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            app:strokeColor="#E0E0E0"
+            app:strokeWidth="1dp"
+            android:layout_marginBottom="24dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/completion_rate_85"
-                android:textSize="18sp"
-                android:textColor="#555555"/>
-        </LinearLayout>
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <!-- Title + Dropdown Row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp">
+
+                    <TextView
+                        android:id="@+id/currentStreaksTitle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="🔥 Current Streaks"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#000000" />
+
+                    <Spinner
+                        android:id="@+id/spinnerStreaks"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:entries="@array/sample_streaks"
+                        android:spinnerMode="dropdown"
+                        android:layout_marginStart="8dp"
+                        android:paddingHorizontal="4dp"
+                        android:backgroundTint="@android:color/darker_gray"/>
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/streakYou"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Maverick - 20 days (You)"
+                    android:textSize="16sp"
+                    android:textColor="#333333"
+                    android:layout_marginBottom="6dp"/>
+
+                <TextView
+                    android:id="@+id/streakFriend1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Hana - 15 days"
+                    android:textSize="16sp"
+                    android:textColor="#333333"
+                    android:layout_marginBottom="6dp"/>
+
+                <TextView
+                    android:id="@+id/streakFriend2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Ced - 10 days"
+                    android:textSize="16sp"
+                    android:textColor="#333333"/>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Previous Streaks Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/previousStreaksCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            app:strokeColor="#E0E0E0"
+            app:strokeWidth="1dp"
+            android:layout_marginBottom="24dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:id="@+id/previousStreaksTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="⚠️ Previous Streaks"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#000000"
+                    android:layout_marginBottom="12dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="8dp">
+
+                    <TextView
+                        android:id="@+id/lostStreakMessage"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Gym: 3 Days"
+                        android:textSize="15sp"
+                        android:textColor="#444444"
+                        android:layout_marginEnd="8dp"/>
+
+                    <Button
+                        android:id="@+id/btnRestore"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Restore"
+                        android:textSize="14sp"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="4dp"
+                        android:backgroundTint="@android:color/darker_gray"
+                        android:textColor="@android:color/white"
+                        android:enabled="false" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/restoresLeft"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Restores left for this month: 0"
+                    android:textSize="14sp"
+                    android:textColor="#AA0000"
+                    android:textStyle="italic" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- Toggles -->
         <LinearLayout
