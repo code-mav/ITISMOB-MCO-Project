@@ -4,5 +4,6 @@
     <item android:id="@+id/nav_dashboard" android:title="Dashboard" android:icon="@android:drawable/ic_menu_info_details"/>
     <item android:id="@+id/nav_leaderboard" android:title="Leaderboard" android:icon="@android:drawable/ic_menu_sort_by_size"/>
     <item android:id="@+id/nav_friends" android:title="Friends" android:icon="@android:drawable/ic_menu_share"/>
+    <item android:id="@+id/nav_gallery" android:title="Gallery" android:icon="@android:drawable/ic_menu_gallery"/>
     <item android:id="@+id/nav_profile" android:title="Profile" android:icon="@android:drawable/ic_menu_manage"/>
 </menu>
