@@ -69,6 +69,7 @@
     <string name="samplename6">🥉 3. Bruce Lee</string>
     <string name="samplename6_streak">— 22 Days</string>
     <string name="log_out">Log Out</string>
+    <string name="profile_picture">profile picture</string>
 
 
     <string-array name="sample_streaks">
