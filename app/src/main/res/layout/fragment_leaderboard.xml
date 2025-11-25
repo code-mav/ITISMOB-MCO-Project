@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -16,26 +15,12 @@
         android:textSize="26sp"
         android:textStyle="bold"
         android:textColor="@android:color/black"
-        android:layout_marginBottom="12dp"/>
+        android:layout_marginBottom="12dp" />
 
-    <!-- Tab Layout -->
-    <com.google.android.material.tabs.TabLayout
-        android:id="@+id/tabLayout"
+    <!-- Friends Leaderboard Content -->
+    <include
+        layout="@layout/fragment_leaderboard_friends"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:tabIndicatorColor="?attr/colorPrimary"
-        app:tabSelectedTextColor="?attr/colorPrimary"
-        app:tabTextColor="@android:color/darker_gray"
-        app:tabIndicatorHeight="4dp"
-        app:tabMode="fixed"
-        android:background="@drawable/tab_bg"
-        android:elevation="2dp"/>
+        android:layout_height="match_parent" />
 
-    <!-- Pager for switching between tabs -->
-    <androidx.viewpager2.widget.ViewPager2
-        android:id="@+id/viewPager"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_marginTop="16dp"/>
 </LinearLayout>
