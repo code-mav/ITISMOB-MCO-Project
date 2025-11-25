@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="12dp"
+    android:background="#FFFFFF"
+    android:elevation="2dp"
+    android:layout_marginBottom="10dp">
+
+    <ImageView
+        android:id="@+id/userPhoto"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginEnd="8dp"
+        android:src="@android:drawable/sym_def_app_icon"
+        android:background="@drawable/circle_bg"
+        android:scaleType="centerCrop"
+        android:contentDescription="User Photo"/>
+
+    <TextView
+        android:id="@+id/reqName"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="Username"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="#333" />
+
+    <Button
+        android:id="@+id/acceptBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Accept"
+        android:backgroundTint="#4CAF50"
+        android:textColor="#FFF"
+        android:paddingHorizontal="10dp" />
+
+    <Button
+        android:id="@+id/declineBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:text="Decline"
+        android:backgroundTint="#B00020"
+        android:textColor="#FFF"
+        android:paddingHorizontal="10dp" />
+
+</LinearLayout>

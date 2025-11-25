@@ -1,35 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/white"
     android:padding="20dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:gravity="center_horizontal">
+        android:orientation="vertical">
 
         <!-- Title -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/friends"
+            android:text="Friends"
             android:textSize="26sp"
             android:textStyle="bold"
-            android:textColor="@android:color/black"
-            android:layout_marginBottom="16dp" />
+            android:textColor="#000"
+            android:layout_marginBottom="20dp" />
 
-        <!-- Search bar -->
+        <!-- Search Bar -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:background="@drawable/friend_card_bg"
+            android:background="#EEEEEE"
             android:padding="10dp"
-            android:elevation="2dp"
             android:layout_marginBottom="20dp"
             android:gravity="center_vertical">
 
@@ -37,150 +33,70 @@
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:src="@android:drawable/ic_menu_search"
-                android:layout_marginEnd="8dp"
-                app:tint="#777777" />
+                android:layout_marginEnd="8dp" />
 
             <EditText
                 android:id="@+id/searchFriendsEt"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:hint="@string/search_users"
+                android:hint="Search users..."
                 android:background="@android:color/transparent"
+                android:textColor="#000"
                 android:padding="4dp"
-                android:textColor="#000000"
-                android:textSize="16sp"
-                android:inputType="textPersonName"/>
+                android:textSize="16sp"/>
         </LinearLayout>
 
-        <!-- Friend Requests Section -->
+        <!-- Search Results -->
         <TextView
-            android:layout_width="match_parent"
+            android:id="@+id/searchTitle"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/friend_requests"
+            android:text="Search Results"
+            android:textSize="18sp"
             android:textStyle="bold"
-            android:textSize="20sp"
-            android:textColor="#000000"
-            android:layout_marginBottom="12dp"
-            android:gravity="start"/>
+            android:textColor="#000"
+            android:layout_marginBottom="8dp"/>
 
-        <!-- Example Friend Request Card -->
-        <LinearLayout
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/searchRecycler"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:background="@drawable/friend_card_bg"
-            android:padding="12dp"
-            android:elevation="2dp"
-            android:layout_marginBottom="16dp"
-            android:gravity="center_vertical">
+            android:nestedScrollingEnabled="false"
+            android:layout_marginBottom="20dp"/>
 
-            <ImageView
-                android:layout_width="55dp"
-                android:layout_height="55dp"
-                android:src="@android:drawable/sym_def_app_icon"
-                android:layout_marginEnd="12dp"
-                android:background="@drawable/circle_bg"
-                android:scaleType="centerCrop"/>
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/samplefriend2"
-                    android:textStyle="bold"
-                    android:textSize="18sp"
-                    android:textColor="#333333"/>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/wants_to_connect_with_you"
-                    android:textSize="14sp"
-                    android:textColor="#777777"/>
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <Button
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/accept"
-                    android:textSize="12sp"
-                    android:backgroundTint="?attr/colorPrimary"
-                    android:textColor="@android:color/white"
-                    android:paddingHorizontal="8dp"/>
-
-                <Button
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/decline"
-                    android:textSize="12sp"
-                    android:backgroundTint="#BBBBBB"
-                    android:textColor="@android:color/white"
-                    android:layout_marginStart="6dp"
-                    android:paddingHorizontal="8dp"/>
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- Friends List Header -->
+        <!-- Friend Requests -->
         <TextView
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/friends_list"
+            android:text="Friend Requests"
+            android:textSize="18sp"
             android:textStyle="bold"
-            android:textSize="20sp"
-            android:textColor="#000000"
-            android:layout_marginBottom="12dp"
-            android:gravity="start"/>
+            android:textColor="#000"
+            android:layout_marginBottom="8dp"/>
 
-        <!-- Friend Card -->
-        <LinearLayout
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/requestsRecycler"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:background="@drawable/friend_card_bg"
-            android:padding="16dp"
-            android:elevation="2dp"
-            android:layout_marginBottom="12dp">
+            android:nestedScrollingEnabled="false"
+            android:layout_marginBottom="20dp"/>
 
-            <ImageView
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:src="@android:drawable/sym_def_app_icon"
-                android:layout_marginEnd="12dp"
-                android:background="@drawable/circle_bg"
-                android:scaleType="centerCrop"/>
+        <!-- Friends List -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Friends List"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#000"
+            android:layout_marginBottom="8dp"/>
 
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/samplefriend1"
-                    android:textSize="18sp"
-                    android:textColor="#333333"
-                    android:textStyle="bold"/>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/_20_days_streak"
-                    android:textColor="#666666"
-                    android:textSize="14sp"/>
-            </LinearLayout>
-        </LinearLayout>
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/friendsRecycler"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:nestedScrollingEnabled="false"/>
     </LinearLayout>
+
 </ScrollView>
