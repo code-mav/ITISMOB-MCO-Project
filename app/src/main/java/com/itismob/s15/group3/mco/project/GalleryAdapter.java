@@ -5,8 +5,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
 import java.util.List;
 
 public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHolder> {
@@ -27,10 +29,19 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         GalleryItem item = items.get(position);
-        holder.imgPhoto.setImageResource(item.getImageRes());
+
+        if (item.getImageBitmap() != null) {
+            holder.imgPhoto.setImageBitmap(item.getImageBitmap());
+        } else {
+            holder.imgPhoto.setImageResource(android.R.color.darker_gray);
+        }
+
+        // tvFriend = who posted
+        // tvHabit  = category
+        // tvStreak = title / caption
         holder.tvFriend.setText(item.getFriendName());
         holder.tvHabit.setText(item.getHabitType());
-        holder.tvStreak.setText(item.getStreakDays() + "-day streak");
+        holder.tvStreak.setText(item.getTitle());
     }
 
     @Override
