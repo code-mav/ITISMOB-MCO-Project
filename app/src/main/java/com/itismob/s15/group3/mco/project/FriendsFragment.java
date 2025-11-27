@@ -7,7 +7,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
@@ -93,28 +92,39 @@ public class FriendsFragment extends Fragment {
                     String uid = s.getKey();
                     if (uid == null) continue;
 
-                    // Create a temporary User with unknown name
-                    User u = new User(uid, "Loading...");
-                    requests.add(u);
-
                     // Fetch the full name from Firebase
                     FirebaseDatabase.getInstance().getReference("users")
                             .child(uid)
-                            .child("fullName")
                             .addListenerForSingleValueEvent(new ValueEventListener() {
                                 @Override
                                 public void onDataChange(@NonNull DataSnapshot snap) {
-                                    String name = snap.getValue(String.class);
-                                    u.fullName = name != null ? name : "Unknown User";
-                                    requestsAdapter.notifyDataSetChanged(); // refresh adapter
+                                    String name = snap.child("fullName").getValue(String.class);
+                                    String userName = name != null ? name : "Unknown User";
+                                    
+                                    // Add to requests list if not already present
+                                    boolean exists = false;
+                                    for(User u : requests) {
+                                        if(u.uid.equals(uid)) {
+                                            exists = true;
+                                            break;
+                                        }
+                                    }
+                                    
+                                    if(!exists) {
+                                        requests.add(new User(uid, userName));
+                                        requestsAdapter.update(new ArrayList<>(requests)); 
+                                    }
                                 }
 
                                 @Override
                                 public void onCancelled(@NonNull DatabaseError error) {}
                             });
                 }
-
-                requestsAdapter.update(new ArrayList<>(requests));
+                
+                // Clear list if snapshot is empty
+                if(!snapshot.exists()) {
+                     requestsAdapter.update(new ArrayList<>());
+                }
             }
 
             @Override
@@ -135,26 +145,36 @@ public class FriendsFragment extends Fragment {
                     String uid = s.getKey();
                     if (uid == null) continue;
 
-                    User u = new User(uid, "Loading...");
-                    friends.add(u);
-
                     FirebaseDatabase.getInstance().getReference("users")
                             .child(uid)
-                            .child("fullName")
                             .addListenerForSingleValueEvent(new ValueEventListener() {
                                 @Override
                                 public void onDataChange(@NonNull DataSnapshot snap) {
-                                    String name = snap.getValue(String.class);
-                                    u.fullName = name != null ? name : "Unknown User";
-                                    friendsAdapter.notifyDataSetChanged();
+                                    String name = snap.child("fullName").getValue(String.class);
+                                    String userName = name != null ? name : "Unknown User";
+                                    
+                                    boolean exists = false;
+                                    for(User u : friends) {
+                                        if(u.uid.equals(uid)) {
+                                            exists = true;
+                                            break;
+                                        }
+                                    }
+                                    
+                                    if(!exists) {
+                                        friends.add(new User(uid, userName));
+                                        friendsAdapter.update(new ArrayList<>(friends));
+                                    }
                                 }
 
                                 @Override
                                 public void onCancelled(@NonNull DatabaseError error) {}
                             });
                 }
-
-                friendsAdapter.update(new ArrayList<>(friends));
+                
+                if(!snapshot.exists()) {
+                    friendsAdapter.update(new ArrayList<>());
+                }
             }
 
             @Override
@@ -176,7 +196,10 @@ public class FriendsFragment extends Fragment {
                 String keyword = s.toString().trim();
                 if (keyword.isEmpty()) {
                     searchAdapter.update(new ArrayList<>());
+                    searchRv.setVisibility(View.GONE); // Hide if empty
                     return;
+                } else {
+                    searchRv.setVisibility(View.VISIBLE); // Show if searching
                 }
 
                 friendsManager.searchUsers(keyword, new ValueEventListener() {
@@ -185,9 +208,15 @@ public class FriendsFragment extends Fragment {
                         List<User> users = new ArrayList<>();
                         for (DataSnapshot snap : snapshot.getChildren()) {
                             String uid = snap.getKey();
-                            if (uid.equals(currentUid)) continue;
+                            // Don't show self
+                            if (uid != null && uid.equals(currentUid)) continue;
 
                             String fullName = snap.child("fullName").getValue(String.class);
+                            String email = snap.child("email").getValue(String.class);
+                            
+                            // Double check keyword match (case insensitive optional, Firebase startAt is case-sensitive typically)
+                            // This logic assumes "fullName" is what we are searching for.
+                            
                             users.add(new User(uid, fullName != null ? fullName : "Unknown User"));
                         }
                         searchAdapter.update(new ArrayList<>(users));
@@ -222,14 +251,13 @@ public class FriendsFragment extends Fragment {
         @Override
         public void onAccept(String uid) {
             friendsManager.acceptFriendRequest(uid);
-            loadFriendRequests();
-            loadFriendsList(); // Refresh names
+            // Refresh handled by live listeners
         }
 
         @Override
         public void onDecline(String uid) {
             friendsManager.declineFriendRequest(uid);
-            loadFriendRequests();
+            // Refresh handled by live listeners
         }
     };
 }

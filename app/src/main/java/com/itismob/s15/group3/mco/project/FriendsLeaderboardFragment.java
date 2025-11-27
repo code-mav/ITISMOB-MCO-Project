@@ -3,6 +3,7 @@ package com.itismob.s15.group3.mco.project;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,7 +24,9 @@ import com.itismob.s15.group3.mco.project.models.User;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class FriendsLeaderboardFragment extends Fragment {
 
@@ -63,14 +66,18 @@ public class FriendsLeaderboardFragment extends Fragment {
         usersRef.child(currentUid).child("friends").addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                List<String> friendUids = new ArrayList<>();
-                friendUids.add(currentUid); // Add self
+                Set<String> uidsToLoad = new HashSet<>();
+                uidsToLoad.add(currentUid); // Add self explicitly
 
                 for (DataSnapshot friendSnapshot : snapshot.getChildren()) {
-                    friendUids.add(friendSnapshot.getKey());
+                    String friendUid = friendSnapshot.getKey();
+                    if(friendUid != null) {
+                        uidsToLoad.add(friendUid);
+                    }
                 }
-
-                fetchUsers(friendUids);
+                
+                // Convert to list for processing
+                fetchUsers(new ArrayList<>(uidsToLoad));
             }
 
             @Override
@@ -83,29 +90,42 @@ public class FriendsLeaderboardFragment extends Fragment {
     private void fetchUsers(List<String> uids) {
         leaderboardList.clear();
         
-        // This is a bit inefficient for many users, but works for small friend lists
-        // A better approach would be to fetch all users once or structure data differently
+        // Helper to count completions
+        final int total = uids.size();
+        final int[] count = {0};
+
         for (String uid : uids) {
             usersRef.child(uid).addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
-                    User user = snapshot.getValue(User.class);
-                    if (user != null) {
-                        // Ensure uid is set if not in the node
-                        if (user.uid == null) user.uid = uid;
-                        // Default streak if null (though int defaults to 0)
-                        leaderboardList.add(user);
-                    }
+                    // We only need basic info + streak
+                    String name = snapshot.child("fullName").getValue(String.class);
+                    Integer streakVal = snapshot.child("streak").getValue(Integer.class);
+                    int streak = (streakVal != null) ? streakVal : 0;
 
-                    // If we have processed all uids (or enough), sort and update
-                    // Ideally we wait for all, but for now, let's update as they come or check size
-                    if (leaderboardList.size() == uids.size()) {
+                    User user = new User();
+                    user.uid = uid;
+                    user.fullName = name != null ? name : "Unknown";
+                    user.streak = streak;
+                    
+                    // Add to list
+                    leaderboardList.add(user);
+                    
+                    // Check if done
+                    count[0]++;
+                    if (count[0] == total) {
                         sortAndDisplay();
                     }
                 }
 
                 @Override
-                public void onCancelled(@NonNull DatabaseError error) {}
+                public void onCancelled(@NonNull DatabaseError error) {
+                    // Even on error, we should count it so we don't hang
+                    count[0]++;
+                    if (count[0] == total) {
+                        sortAndDisplay();
+                    }
+                }
             });
         }
     }
