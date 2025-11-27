@@ -168,6 +168,7 @@ public class HomeFragment extends Fragment {
             requireActivity().getSupportFragmentManager()
                     .beginTransaction()
                     .replace(R.id.fragment_container, proofFragment)
+                    .addToBackStack(null) // Add to backstack
                     .commit();
         });
     }
@@ -265,7 +266,19 @@ public class HomeFragment extends Fragment {
         if (daySet.isEmpty()) return 0;
 
         Calendar cal = Calendar.getInstance();
+        
+        // Check today first
+        String today = dayFormat.format(cal.getTime());
+        
         int streak = 0;
+        if (daySet.contains(today)) {
+        } else {
+            cal.add(Calendar.DAY_OF_MONTH, -1);
+            String yesterday = dayFormat.format(cal.getTime());
+            if (!daySet.contains(yesterday)) {
+                return 0; // Streak broken
+            }
+        }
 
         while (true) {
             String day = dayFormat.format(cal.getTime());
