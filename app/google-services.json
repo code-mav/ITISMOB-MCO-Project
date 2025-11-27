@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "802021232804",
+    "project_id": "mco-project-cad74",
+    "storage_bucket": "mco-project-cad74.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:802021232804:android:7caaa5c2c3c4d648d45631",
+        "android_client_info": {
+          "package_name": "com.itismob.s15.group3.mco.project"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAS5k9afsDdH2HsIz1ExSvxWnqHouP-jAQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
