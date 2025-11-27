@@ -1,20 +1,50 @@
 package com.itismob.s15.group3.mco.project;
 
-public class GalleryItem {
-    private int imageRes;
-    private String friendName;
-    private String habitType;
-    private int streakDays;
+import android.graphics.Bitmap;
 
-    public GalleryItem(int imageRes, String friendName, String habitType, int streakDays) {
-        this.imageRes = imageRes;
+public class GalleryItem {
+    private Bitmap imageBitmap;
+    private String friendName;   // who posted 
+    private String habitType;    // category
+    private String title;        // snap title
+    private String userId;       // owner id
+    private long timestamp;      // when it was posted (millis)
+
+    public GalleryItem(Bitmap imageBitmap,
+                       String friendName,
+                       String habitType,
+                       String title,
+                       String userId,
+                       long timestamp) {
+        this.imageBitmap = imageBitmap;
         this.friendName = friendName;
         this.habitType = habitType;
-        this.streakDays = streakDays;
+        this.title = title;
+        this.userId = userId;
+        this.timestamp = timestamp;
     }
 
-    public int getImageRes() { return imageRes; }
-    public String getFriendName() { return friendName; }
-    public String getHabitType() { return habitType; }
-    public int getStreakDays() { return streakDays; }
+    public Bitmap getImageBitmap() {
+        return imageBitmap;
+    }
+
+    public String getFriendName() {
+        return friendName;
+    }
+
+    public String getHabitType() {
+        return habitType;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public long getTimestamp() {
+        return timestamp;
+    }
 }

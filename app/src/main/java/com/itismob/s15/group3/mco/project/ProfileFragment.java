@@ -5,6 +5,8 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.appcompat.app.AlertDialog;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -21,12 +23,19 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
+import com.itismob.s15.group3.mco.project.models.UserActivity;
 import com.squareup.picasso.Picasso;
+
+import java.util.ArrayList;
+import java.util.Collections;
 
 public class ProfileFragment extends Fragment {
 
     private TextView nameTv, bioTv;
     private ImageView profileIv;
+    private RecyclerView activitiesRecyclerView;
+    private ActivityAdapter activityAdapter;
+    private ArrayList<UserActivity> activityList;
 
     public ProfileFragment() {}
 
@@ -39,9 +48,17 @@ public class ProfileFragment extends Fragment {
         nameTv = v.findViewById(R.id.nameTextView);
         bioTv = v.findViewById(R.id.bioTextView);
         profileIv = v.findViewById(R.id.profileImageView);
+        activitiesRecyclerView = v.findViewById(R.id.activitiesRecyclerView);
+
+        // Setup RecyclerView
+        activitiesRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        activityList = new ArrayList<>();
+        activityAdapter = new ActivityAdapter(getContext(), activityList);
+        activitiesRecyclerView.setAdapter(activityAdapter);
 
         loadProfile();
         loadProfilePic();
+        loadRecentActivities();
 
         // Edit button navigates to EditProfileFragment
         Button edit = v.findViewById(R.id.editProfileBtn);
@@ -121,6 +138,36 @@ public class ProfileFragment extends Fragment {
                     public void onFailure(@NonNull Exception e) {
                         profileIv.setImageResource(android.R.drawable.sym_def_app_icon);
                     }
+                });
+    }
+
+    private void loadRecentActivities() {
+        String uid = requireActivity()
+                .getSharedPreferences("user", 0)
+                .getString("uid", null);
+        if (uid == null) return;
+
+        FirebaseDatabase.getInstance().getReference("activities")
+                .child(uid)
+                .orderByChild("timestamp")
+                .limitToLast(5) // Get last 5 activities
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        activityList.clear();
+                        for (DataSnapshot s : snapshot.getChildren()) {
+                            UserActivity activity = s.getValue(UserActivity.class);
+                            if (activity != null) {
+                                activityList.add(activity);
+                            }
+                        }
+                        // Reverse to show newest first
+                        Collections.reverse(activityList);
+                        activityAdapter.notifyDataSetChanged();
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {}
                 });
     }
 }
