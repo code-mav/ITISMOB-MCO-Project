@@ -13,15 +13,12 @@ public class LeaderboardPagerAdapter extends FragmentStateAdapter {
     @NonNull
     @Override
     public Fragment createFragment(int position) {
-        if (position == 0) {
-            return new FriendsLeaderboardFragment();
-        } else {
-            return new GlobalLeaderboardFragment();
-        }
+        // Only friends leaderboard
+        return new FriendsLeaderboardFragment();
     }
 
     @Override
     public int getItemCount() {
-        return 2; // Friends + Global
+        return 1; // Only Friends
     }
 }

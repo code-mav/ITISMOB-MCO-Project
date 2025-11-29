@@ -62,8 +62,9 @@
                 android:textColor="#555555" />
         </LinearLayout>
 
-        <!-- Activities Section -->
+        <!-- Activities Section (Removed/Hidden) -->
         <TextView
+            android:id="@+id/recentActivitiesLabel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/recent_activities"
@@ -71,14 +72,16 @@
             android:textSize="20sp"
             android:textColor="#000000"
             android:layout_marginBottom="12dp"
-            android:gravity="center" />
+            android:gravity="center"
+            android:visibility="gone"/>
 
-        <!-- Activities RecyclerView -->
+        <!-- Activities RecyclerView (Removed/Hidden) -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/activitiesRecyclerView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:nestedScrollingEnabled="false"/>
+            android:nestedScrollingEnabled="false"
+            android:visibility="gone"/>
 
         <!-- Edit button -->
         <Button

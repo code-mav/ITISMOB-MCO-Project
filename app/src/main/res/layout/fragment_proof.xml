@@ -47,7 +47,7 @@
         android:layout_width="match_parent"
         android:layout_height="54dp"
         android:layout_marginTop="12dp"
-        android:text="Snap! (Demo)"
+        android:text="Upload Photo"
         android:textSize="16sp"
         android:textAllCaps="false"
         android:backgroundTint="#FF9800"

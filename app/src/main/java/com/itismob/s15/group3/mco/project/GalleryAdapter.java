@@ -13,9 +13,17 @@ import java.util.List;
 
 public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHolder> {
     private List<GalleryItem> items;
+    private String currentUserId;
+    private OnDeleteListener deleteListener;
 
-    public GalleryAdapter(List<GalleryItem> items) {
+    public interface OnDeleteListener {
+        void onDelete(GalleryItem item);
+    }
+
+    public GalleryAdapter(List<GalleryItem> items, String currentUserId, OnDeleteListener deleteListener) {
         this.items = items;
+        this.currentUserId = currentUserId;
+        this.deleteListener = deleteListener;
     }
 
     @NonNull
@@ -36,12 +44,21 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
             holder.imgPhoto.setImageResource(android.R.color.darker_gray);
         }
 
-        // tvFriend = who posted
-        // tvHabit  = category
-        // tvStreak = title / caption
         holder.tvFriend.setText(item.getFriendName());
         holder.tvHabit.setText(item.getHabitType());
         holder.tvStreak.setText(item.getTitle());
+
+        // Show delete button only if current user owns the item
+        if (currentUserId != null && currentUserId.equals(item.getUserId())) {
+            holder.btnDelete.setVisibility(View.VISIBLE);
+            holder.btnDelete.setOnClickListener(v -> {
+                if (deleteListener != null) {
+                    deleteListener.onDelete(item);
+                }
+            });
+        } else {
+            holder.btnDelete.setVisibility(View.GONE);
+        }
     }
 
     @Override
@@ -51,11 +68,13 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 
     static class ViewHolder extends RecyclerView.ViewHolder {
         ImageView imgPhoto;
+        ImageView btnDelete;
         TextView tvFriend, tvHabit, tvStreak;
 
         ViewHolder(View itemView) {
             super(itemView);
             imgPhoto = itemView.findViewById(R.id.imgPhoto);
+            btnDelete = itemView.findViewById(R.id.btnDelete);
             tvFriend = itemView.findViewById(R.id.tvFriend);
             tvHabit = itemView.findViewById(R.id.tvHabit);
             tvStreak = itemView.findViewById(R.id.tvStreak);
