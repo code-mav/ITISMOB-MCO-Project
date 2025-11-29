@@ -51,8 +51,10 @@ public class FriendsLeaderboardFragment extends Fragment {
 
         usersRef = FirebaseDatabase.getInstance().getReference("users");
         
-        SharedPreferences prefs = requireActivity().getSharedPreferences("user", Context.MODE_PRIVATE);
-        currentUid = prefs.getString("uid", null);
+        if (getActivity() != null) {
+            SharedPreferences prefs = getActivity().getSharedPreferences("user", Context.MODE_PRIVATE);
+            currentUid = prefs.getString("uid", null);
+        }
 
         if (currentUid != null) {
             loadFriendsLeaderboard();
@@ -66,6 +68,8 @@ public class FriendsLeaderboardFragment extends Fragment {
         usersRef.child(currentUid).child("friends").addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (!isAdded() || getContext() == null) return; // Check if fragment is still attached
+
                 Set<String> uidsToLoad = new HashSet<>();
                 uidsToLoad.add(currentUid); // Add self explicitly
 
@@ -89,6 +93,10 @@ public class FriendsLeaderboardFragment extends Fragment {
 
     private void fetchUsers(List<String> uids) {
         leaderboardList.clear();
+        if (uids.isEmpty()) {
+            adapter.notifyDataSetChanged();
+            return;
+        }
         
         // Helper to count completions
         final int total = uids.size();
@@ -98,6 +106,8 @@ public class FriendsLeaderboardFragment extends Fragment {
             usersRef.child(uid).addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    if (!isAdded() || getContext() == null) return; // Fragment check
+
                     // We only need basic info + streak
                     String name = snapshot.child("fullName").getValue(String.class);
                     Integer streakVal = snapshot.child("streak").getValue(Integer.class);
@@ -131,6 +141,8 @@ public class FriendsLeaderboardFragment extends Fragment {
     }
 
     private void sortAndDisplay() {
+        if (!isAdded() || getContext() == null) return; // Safe check before UI update
+
         Collections.sort(leaderboardList, (u1, u2) -> Integer.compare(u2.streak, u1.streak)); // Descending
         adapter.notifyDataSetChanged();
     }

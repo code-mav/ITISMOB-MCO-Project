@@ -48,7 +48,19 @@ public class ProofFragment extends Fragment {
     DatabaseReference mDatabase;
     String currentUid;
 
+    private String category = "Fitness"; // Default
+    private String title = "Daily Streak"; // Default
+
     public ProofFragment() {}
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (getArguments() != null) {
+            category = getArguments().getString("category", "Fitness");
+            title = getArguments().getString("title", "Daily Streak");
+        }
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -139,8 +151,8 @@ public class ProofFragment extends Fragment {
         String key = mDatabase.child("users").child(currentUid).child("proofs").push().getKey();
         
         Map<String, Object> proof = new HashMap<>();
-        proof.put("category", "Gym"); // Defaulting to 'Gym' for now
-        proof.put("title", "Daily Gym Session");
+        proof.put("category", category); 
+        proof.put("title", title);
         proof.put("timestamp", timestamp);
         proof.put("imageBase64", encodedImage);
 
@@ -174,7 +186,8 @@ public class ProofFragment extends Fragment {
                 
                 boolean sameDay = last.get(Calendar.YEAR) == now.get(Calendar.YEAR) &&
                                   last.get(Calendar.DAY_OF_YEAR) == now.get(Calendar.DAY_OF_YEAR);
-
+                
+                // Check if it is a new day
                 if (!sameDay) {
                     Calendar yesterday = Calendar.getInstance();
                     yesterday.add(Calendar.DAY_OF_YEAR, -1);

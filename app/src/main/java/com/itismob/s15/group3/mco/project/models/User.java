@@ -9,6 +9,8 @@ public class User {
     public int streak;       // Current streak count
     public int restoresLeft; // Restores available for the month
     public int lostStreak;   // Value of the lost streak (if any) to be restored
+    public long lastStreakUpdate; // Timestamp of last streak update
+    public long lastRestoreReset; // Timestamp of last monthly restore reset
 
     // Default constructor required for Firebase
     public User() {

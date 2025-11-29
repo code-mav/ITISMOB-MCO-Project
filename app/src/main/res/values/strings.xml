@@ -10,7 +10,7 @@
     <string name="your_name">Name: Your Name</string>
     <string name="edit_profile">Edit Profile</string>
     <string name="profile">Profile</string>
-    <string name="capture_photo">Capture Photo (must be live)</string>
+    <string name="capture_photo">Capture Photo</string>
     <string name="submit_proof">Snap! (demo)</string>
     <string name="captured">captured</string>
     <string name="proof_submission">Proof Submission</string>

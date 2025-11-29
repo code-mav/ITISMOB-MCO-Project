@@ -1,7 +1,10 @@
 package com.itismob.s15.group3.mco.project;
 
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.view.LayoutInflater;
@@ -18,6 +21,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.SwitchCompat;
+import androidx.core.app.NotificationCompat;
 import androidx.fragment.app.Fragment;
 
 import com.google.firebase.database.DataSnapshot;
@@ -31,8 +35,9 @@ import com.itismob.s15.group3.mco.project.models.UserActivity;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
-import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class DashboardFragment extends Fragment {
@@ -49,6 +54,10 @@ public class DashboardFragment extends Fragment {
     private User currentUser;
     private CountDownTimer timer;
 
+    private static final String CHANNEL_ID = "SNAPBIT_CHANNEL";
+    private boolean dailyNotified = false;
+    private boolean streakWarningNotified = false;
+
     public DashboardFragment() {}
 
     @Override
@@ -63,13 +72,7 @@ public class DashboardFragment extends Fragment {
         restoresLeftView = view.findViewById(R.id.restoresLeft);
         lostStreakMessage = view.findViewById(R.id.lostStreakMessage);
         spinnerStreaks = view.findViewById(R.id.spinnerStreaks);
-        streaksContainer = view.findViewById(R.id.currentStreaksCard).findViewById(R.id.streakYou).getParent() instanceof LinearLayout ? 
-                (LinearLayout) view.findViewById(R.id.currentStreaksCard).findViewById(R.id.streakYou).getParent() : null;
         
-        // If the XML structure is slightly different (LinearLayout inside CardView), finding parent is safer or finding ID if added
-        // The XML shows a LinearLayout inside the CardView. We need to target that LinearLayout to add/remove views.
-        // For safety, let's find the LinearLayout directly if possible. In the provided XML, the LinearLayout inside `currentStreaksCard` doesn't have an ID.
-        // But `streakYou` is inside it.
         View streakYou = view.findViewById(R.id.streakYou);
         if (streakYou != null) {
             streaksContainer = (LinearLayout) streakYou.getParent();
@@ -80,8 +83,12 @@ public class DashboardFragment extends Fragment {
 
         // Initialize Firebase
         mDatabase = FirebaseDatabase.getInstance().getReference();
-        SharedPreferences prefs = requireActivity().getSharedPreferences("user", Context.MODE_PRIVATE);
-        currentUid = prefs.getString("uid", null);
+        if (getActivity() != null) {
+            SharedPreferences prefs = requireActivity().getSharedPreferences("user", Context.MODE_PRIVATE);
+            currentUid = prefs.getString("uid", null);
+        }
+
+        createNotificationChannel();
 
         // Setup Timer
         setupGlobalTimer();
@@ -101,6 +108,30 @@ public class DashboardFragment extends Fragment {
         return view;
     }
 
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = "SnapBit Notifications";
+            String description = "Reminders for streaks";
+            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
+            channel.setDescription(description);
+            NotificationManager notificationManager = requireContext().getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+        }
+    }
+
+    private void sendNotification(String title, String content) {
+        if (!isAdded() || getContext() == null) return;
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(requireContext(), CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.ic_dialog_info) // Replace with app icon if available
+                .setContentTitle(title)
+                .setContentText(content)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+
+        NotificationManager notificationManager = (NotificationManager) requireContext().getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.notify((int) System.currentTimeMillis(), builder.build());
+    }
+
     private void setupGlobalTimer() {
         // Calculate time until next midnight
         Calendar now = Calendar.getInstance();
@@ -113,34 +144,85 @@ public class DashboardFragment extends Fragment {
 
         long timeUntilMidnight = midnight.getTimeInMillis() - now.getTimeInMillis();
         long totalDayMillis = 24 * 60 * 60 * 1000;
+        long sixHoursMillis = 6 * 60 * 60 * 1000;
 
         if (timer != null) timer.cancel();
         timer = new CountDownTimer(timeUntilMidnight, 1000) {
             public void onTick(long millisUntilFinished) {
+                if (!isAdded() || getContext() == null) {
+                    cancel();
+                    return;
+                }
+
                 long hours = TimeUnit.MILLISECONDS.toHours(millisUntilFinished);
                 long minutes = TimeUnit.MILLISECONDS.toMinutes(millisUntilFinished) % 60;
                 long seconds = TimeUnit.MILLISECONDS.toSeconds(millisUntilFinished) % 60;
                 
                 String time = String.format("%02d:%02d:%02d", hours, minutes, seconds);
-                tvStreakTimer.setText(time);
+                if (tvStreakTimer != null) tvStreakTimer.setText(time);
                 
-                // Progress: 100% at 24h remaining, 0% at 0h.
-                // millisUntilFinished / totalDayMillis * 100
                 int progress = (int) ((millisUntilFinished * 100) / totalDayMillis);
-                streakProgressBar.setProgress(progress);
+                if (streakProgressBar != null) streakProgressBar.setProgress(progress);
+
+                // Logic for reminders
+                checkReminders(millisUntilFinished, sixHoursMillis);
             }
             public void onFinish() {
-                tvStreakTimer.setText("00:00:00");
-                streakProgressBar.setProgress(0);
+                if (!isAdded() || getContext() == null) return;
+
+                if (tvStreakTimer != null) tvStreakTimer.setText("00:00:00");
+                if (streakProgressBar != null) streakProgressBar.setProgress(0);
+                dailyNotified = false;
+                streakWarningNotified = false;
                 setupGlobalTimer(); // Restart for next day
             }
         }.start();
+    }
+    
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (timer != null) {
+            timer.cancel();
+        }
+    }
+
+    private void checkReminders(long millisUntilFinished, long sixHoursMillis) {
+        if (!isAdded() || getActivity() == null) return;
+        SharedPreferences prefs = requireActivity().getSharedPreferences("settings", Context.MODE_PRIVATE);
+        boolean dailyEnabled = prefs.getBoolean("daily_reminder", true);
+        boolean streakEnabled = prefs.getBoolean("streak_warning", false);
+
+        // Check if streak maintained today
+        boolean maintainedToday = false;
+        if (currentUser != null) {
+            Calendar last = Calendar.getInstance();
+            last.setTimeInMillis(currentUser.lastStreakUpdate);
+            Calendar now = Calendar.getInstance();
+            maintainedToday = last.get(Calendar.YEAR) == now.get(Calendar.YEAR) &&
+                              last.get(Calendar.DAY_OF_YEAR) == now.get(Calendar.DAY_OF_YEAR);
+        }
+        
+        // If maintained today, do not send warnings
+        if (maintainedToday) return;
+
+        // 6 hours left (allow some buffer for timer tick)
+        if (millisUntilFinished <= sixHoursMillis && millisUntilFinished > (sixHoursMillis - 60000)) {
+            if (dailyEnabled && !dailyNotified) {
+                sendNotification("New day", "A new day is up and you should do your streak! 6 hours left.");
+                dailyNotified = true;
+            }
+            if (streakEnabled && !streakWarningNotified) {
+                sendNotification("Streak Warning", "Your streak is about to end!");
+                streakWarningNotified = true;
+            }
+        }
     }
 
     private void setupSpinner() {
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(getContext(),
                 R.array.sample_streaks, android.R.layout.simple_spinner_item);
-        // If sample_streaks doesn't exist or we want custom:
+        
         String[] options = {"Top Friends", "All Friends"};
         ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, options);
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -162,9 +244,10 @@ public class DashboardFragment extends Fragment {
         mDatabase.child("users").child(currentUid).addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (!isAdded()) return;
                 currentUser = snapshot.getValue(User.class);
                 if (currentUser != null) {
-                    // Ensure fields that might be null/0 are handled
+                    checkMonthlyRestoreReset();
                     updateRestoreUI();
                     loadFriendsStreaks(spinnerStreaks.getSelectedItemPosition() == 0);
                 }
@@ -175,12 +258,38 @@ public class DashboardFragment extends Fragment {
         });
     }
 
+    // Restore reset logic: Every month reset to 3, do not stack
+    private void checkMonthlyRestoreReset() {
+        if (currentUser == null) return;
+        
+        Calendar now = Calendar.getInstance();
+        Calendar lastReset = Calendar.getInstance();
+        lastReset.setTimeInMillis(currentUser.lastRestoreReset);
+        
+        // If never reset (0) or different month/year
+        if (currentUser.lastRestoreReset == 0 || 
+            now.get(Calendar.MONTH) != lastReset.get(Calendar.MONTH) ||
+            now.get(Calendar.YEAR) != lastReset.get(Calendar.YEAR)) {
+            
+            // Reset to 3
+            currentUser.restoresLeft = 3;
+            currentUser.lastRestoreReset = now.getTimeInMillis();
+            
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("restoresLeft", 3);
+            updates.put("lastRestoreReset", now.getTimeInMillis());
+            
+            mDatabase.child("users").child(currentUid).updateChildren(updates);
+        }
+    }
+
     private void loadFriendsStreaks(boolean topOnly) {
         if (currentUid == null || streaksContainer == null) return;
 
         mDatabase.child("users").child(currentUid).child("friends").addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (!isAdded()) return;
                 List<String> uids = new ArrayList<>();
                 uids.add(currentUid); // Add self
                 for (DataSnapshot s : snapshot.getChildren()) {
@@ -203,6 +312,7 @@ public class DashboardFragment extends Fragment {
             mDatabase.child("users").child(uid).addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    if (!isAdded()) return;
                     User u = snapshot.getValue(User.class);
                     if (u != null) {
                         if (u.uid == null) u.uid = uid;
@@ -223,11 +333,10 @@ public class DashboardFragment extends Fragment {
     }
 
     private void updateStreaksList(List<User> users, boolean topOnly) {
+        if (getContext() == null) return;
         Collections.sort(users, (u1, u2) -> Integer.compare(u2.streak, u1.streak));
 
         // Clear previous list except the title and spinner row (indices 0)
-        // The layout has: 0: Title Row, 1: You, 2: Friend1, 3: Friend2
-        // We should remove all views starting from index 1
         int childCount = streaksContainer.getChildCount();
         if (childCount > 1) {
             streaksContainer.removeViews(1, childCount - 1);
@@ -253,22 +362,51 @@ public class DashboardFragment extends Fragment {
     }
 
     private void updateRestoreUI() {
-        if (currentUser == null) return;
+        if (currentUser == null || getContext() == null) return;
 
         lostStreakMessage.setText("Lost Streak: " + currentUser.lostStreak + " days");
         restoresLeftView.setText("Restores left for this month: " + currentUser.restoresLeft);
+        
+        // Check if streak maintained today
+        Calendar last = Calendar.getInstance();
+        last.setTimeInMillis(currentUser.lastStreakUpdate);
+        Calendar now = Calendar.getInstance();
+        
+        boolean sameDay = last.get(Calendar.YEAR) == now.get(Calendar.YEAR) &&
+                          last.get(Calendar.DAY_OF_YEAR) == now.get(Calendar.DAY_OF_YEAR);
 
-        if (currentUser.restoresLeft > 0 && currentUser.lostStreak > 0) {
-            btnRestore.setEnabled(true);
-            btnRestore.setBackgroundTintList(getContext().getColorStateList(android.R.color.holo_green_dark));
+        if (sameDay) {
+             // Streak maintained today, no need to restore
+             btnRestore.setEnabled(false);
+             btnRestore.setText("Streak Maintained");
+             btnRestore.setBackgroundTintList(getContext().getColorStateList(android.R.color.darker_gray));
         } else {
-            btnRestore.setEnabled(false);
-            btnRestore.setBackgroundTintList(getContext().getColorStateList(android.R.color.darker_gray));
+            if (currentUser.restoresLeft > 0 && currentUser.lostStreak > 0) {
+                btnRestore.setEnabled(true);
+                btnRestore.setText("Restore Streak");
+                btnRestore.setBackgroundTintList(getContext().getColorStateList(android.R.color.holo_green_dark));
+            } else {
+                btnRestore.setEnabled(false);
+                btnRestore.setText("Restore Streak");
+                btnRestore.setBackgroundTintList(getContext().getColorStateList(android.R.color.darker_gray));
+            }
         }
     }
 
     private void restoreStreak() {
         if (currentUser == null || currentUser.restoresLeft <= 0 || currentUser.lostStreak <= 0) return;
+        
+        // Double check if maintained today
+        Calendar last = Calendar.getInstance();
+        last.setTimeInMillis(currentUser.lastStreakUpdate);
+        Calendar now = Calendar.getInstance();
+        boolean sameDay = last.get(Calendar.YEAR) == now.get(Calendar.YEAR) &&
+                          last.get(Calendar.DAY_OF_YEAR) == now.get(Calendar.DAY_OF_YEAR);
+        
+        if (sameDay) {
+            Toast.makeText(getContext(), "Streak already maintained for today.", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         int newStreak = currentUser.streak + currentUser.lostStreak;
         int newRestores = currentUser.restoresLeft - 1;
@@ -300,12 +438,14 @@ public class DashboardFragment extends Fragment {
     }
 
     private void loadSwitchStates() {
+        if (!isAdded() || getActivity() == null) return;
         SharedPreferences prefs = requireActivity().getSharedPreferences("settings", Context.MODE_PRIVATE);
         toggleDailySwitch.setChecked(prefs.getBoolean("daily_reminder", true));
         toggleStreakSwitch.setChecked(prefs.getBoolean("streak_warning", false));
     }
 
     private void saveSwitchState(String key, boolean value) {
+        if (!isAdded() || getActivity() == null) return;
         SharedPreferences prefs = requireActivity().getSharedPreferences("settings", Context.MODE_PRIVATE);
         prefs.edit().putBoolean(key, value).apply();
         

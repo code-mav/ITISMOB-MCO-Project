@@ -14,6 +14,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -57,6 +58,12 @@ public class GalleryFragment extends Fragment {
     private static final String ALL_HABITS = "All habits";
     private static final String ALL_FRIENDS = "All friends";
 
+    private static final String CAT_FITNESS = "Fitness";
+    private static final String CAT_LEARNING = "Learning";
+    private static final String CAT_HEALTH = "Health";
+    private static final String CAT_CREATIVITY = "Creativity";
+    private static final String CAT_PRODUCTIVITY = "Productivity";
+
     private final SimpleDateFormat dayFormat =
             new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
 
@@ -75,15 +82,42 @@ public class GalleryFragment extends Fragment {
         spinnerFriend = view.findViewById(R.id.spinnerFriend);
         rvPhotos = view.findViewById(R.id.rvPhotos);
 
+        String currentUid = requireActivity()
+                .getSharedPreferences("user", 0)
+                .getString("uid", null);
+
         // RecyclerView grid setup
         rvPhotos.setLayoutManager(new GridLayoutManager(getContext(), 2));
-        adapter = new GalleryAdapter(displayItems);
+        adapter = new GalleryAdapter(displayItems, currentUid, this::confirmDelete);
         rvPhotos.setAdapter(adapter);
 
         setupSpinners();
         loadUserAndFriendsProofs();
 
         return view;
+    }
+
+    private void confirmDelete(GalleryItem item) {
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Delete Photo")
+                .setMessage("Are you sure you want to delete this photo? It will be gone forever.")
+                .setPositiveButton("Delete", (dialog, which) -> deleteItem(item))
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void deleteItem(GalleryItem item) {
+        if (item.getKey() == null || item.getUserId() == null) return;
+
+        DatabaseReference proofRef = FirebaseDatabase.getInstance().getReference()
+                .child("users")
+                .child(item.getUserId())
+                .child("proofs")
+                .child(item.getKey());
+
+        proofRef.removeValue()
+                .addOnSuccessListener(aVoid -> Toast.makeText(getContext(), "Photo deleted", Toast.LENGTH_SHORT).show())
+                .addOnFailureListener(e -> Toast.makeText(getContext(), "Failed to delete: " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
 
     private void setupSpinners() {
@@ -94,6 +128,14 @@ public class GalleryFragment extends Fragment {
 
         dateOptions.add(ALL_DATES);
         habitOptions.add(ALL_HABITS);
+        
+        // Add fixed categories
+        habitOptions.add(CAT_FITNESS);
+        habitOptions.add(CAT_LEARNING);
+        habitOptions.add(CAT_HEALTH);
+        habitOptions.add(CAT_CREATIVITY);
+        habitOptions.add(CAT_PRODUCTIVITY);
+        
         friendOptions.add(ALL_FRIENDS);
 
         dateAdapter = new ArrayAdapter<>(requireContext(),
@@ -188,7 +230,21 @@ public class GalleryFragment extends Fragment {
         usersRef.child(userId).addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot userSnap) {
-                if (!userSnap.exists()) return;
+                // If user node deleted or null, clear items for this user
+                if (!userSnap.exists()) {
+                    List<GalleryItem> toRemove = new ArrayList<>();
+                    for (GalleryItem item : allItems) {
+                        if (userId.equals(item.getUserId())) {
+                            toRemove.add(item);
+                        }
+                    }
+                    if (!toRemove.isEmpty()) {
+                        allItems.removeAll(toRemove);
+                        rebuildFilterOptions();
+                        applyFilters();
+                    }
+                    return;
+                }
 
                 String name = overrideName;
                 if (name == null) {
@@ -208,6 +264,7 @@ public class GalleryFragment extends Fragment {
                 // Add all current proofs for this user
                 DataSnapshot proofsSnap = userSnap.child("proofs");
                 for (DataSnapshot proofSnap : proofsSnap.getChildren()) {
+                    String proofKey = proofSnap.getKey();
                     String category = proofSnap.child("category").getValue(String.class);
                     String title = proofSnap.child("title").getValue(String.class);
                     Long timestampObj = proofSnap.child("timestamp").getValue(Long.class);
@@ -227,7 +284,7 @@ public class GalleryFragment extends Fragment {
                         }
                     }
 
-                    GalleryItem item = new GalleryItem(bitmap, name, category, title, userId, timestamp);
+                    GalleryItem item = new GalleryItem(bitmap, name, category, title, userId, timestamp, proofKey);
                     allItems.add(item);
                 }
 
@@ -251,7 +308,6 @@ public class GalleryFragment extends Fragment {
     private void rebuildFilterOptions() {
         // Use sets to avoid duplicates
         Set<String> dateSet = new HashSet<>();
-        Set<String> habitSet = new HashSet<>();
         Set<String> friendSet = new HashSet<>();
 
         for (GalleryItem item : allItems) {
@@ -260,7 +316,6 @@ public class GalleryFragment extends Fragment {
                 String day = dayFormat.format(new Date(item.getTimestamp()));
                 dateSet.add(day);
             }
-            habitSet.add(item.getHabitType());
             friendSet.add(item.getFriendName());
         }
 
@@ -269,38 +324,44 @@ public class GalleryFragment extends Fragment {
         String selectedHabit = (String) spinnerHabit.getSelectedItem();
         String selectedFriend = (String) spinnerFriend.getSelectedItem();
 
-        dateOptions.clear();
-        habitOptions.clear();
-        friendOptions.clear();
-
-        dateOptions.add(ALL_DATES);
-        habitOptions.add(ALL_HABITS);
-        friendOptions.add(ALL_FRIENDS);
-
-        dateOptions.addAll(dateSet);
-        habitOptions.addAll(habitSet);
-        friendOptions.addAll(friendSet);
-
-        dateAdapter.notifyDataSetChanged();
-        habitAdapter.notifyDataSetChanged();
-        friendAdapter.notifyDataSetChanged();
-
-        if (selectedDate != null && dateOptions.contains(selectedDate)) {
-            spinnerDate.setSelection(dateOptions.indexOf(selectedDate));
-        } else {
-            spinnerDate.setSelection(0);
+        // Update Date options
+        List<String> newDates = new ArrayList<>();
+        newDates.add(ALL_DATES);
+        newDates.addAll(dateSet);
+        // Only update adapter if changed to avoid flickering or resetting selection unnecessarily
+        if (!newDates.equals(dateOptions)) {
+            dateOptions.clear();
+            dateOptions.addAll(newDates);
+            dateAdapter.notifyDataSetChanged();
+             if (selectedDate != null && dateOptions.contains(selectedDate)) {
+                spinnerDate.setSelection(dateOptions.indexOf(selectedDate));
+            } else {
+                spinnerDate.setSelection(0);
+            }
         }
 
+        // Habit options are FIXED now, so we don't rebuild them dynamically from items
+        // But we ensure the selection is kept
         if (selectedHabit != null && habitOptions.contains(selectedHabit)) {
             spinnerHabit.setSelection(habitOptions.indexOf(selectedHabit));
         } else {
-            spinnerHabit.setSelection(0);
+             spinnerHabit.setSelection(0);
         }
 
-        if (selectedFriend != null && friendOptions.contains(selectedFriend)) {
-            spinnerFriend.setSelection(friendOptions.indexOf(selectedFriend));
-        } else {
-            spinnerFriend.setSelection(0);
+        // Update Friend options
+        List<String> newFriends = new ArrayList<>();
+        newFriends.add(ALL_FRIENDS);
+        newFriends.addAll(friendSet);
+
+        if (!newFriends.equals(friendOptions)) {
+            friendOptions.clear();
+            friendOptions.addAll(newFriends);
+            friendAdapter.notifyDataSetChanged();
+            if (selectedFriend != null && friendOptions.contains(selectedFriend)) {
+                spinnerFriend.setSelection(friendOptions.indexOf(selectedFriend));
+            } else {
+                spinnerFriend.setSelection(0);
+            }
         }
     }
 

@@ -13,6 +13,17 @@
         android:src="@drawable/gym1"
         android:contentDescription="Habit photo" />
 
+    <ImageView
+        android:id="@+id/btnDelete"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:src="@android:drawable/ic_menu_delete"
+        android:layout_gravity="top|end"
+        android:layout_margin="4dp"
+        android:background="#88000000"
+        android:padding="2dp"
+        android:visibility="gone"/>
+
     <!-- Overlay info -->
     <LinearLayout
         android:layout_width="match_parent"

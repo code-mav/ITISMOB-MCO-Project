@@ -9,19 +9,22 @@ public class GalleryItem {
     private String title;        // snap title
     private String userId;       // owner id
     private long timestamp;      // when it was posted (millis)
+    private String key;          // Firebase key
 
     public GalleryItem(Bitmap imageBitmap,
                        String friendName,
                        String habitType,
                        String title,
                        String userId,
-                       long timestamp) {
+                       long timestamp,
+                       String key) {
         this.imageBitmap = imageBitmap;
         this.friendName = friendName;
         this.habitType = habitType;
         this.title = title;
         this.userId = userId;
         this.timestamp = timestamp;
+        this.key = key;
     }
 
     public Bitmap getImageBitmap() {
@@ -46,5 +49,9 @@ public class GalleryItem {
 
     public long getTimestamp() {
         return timestamp;
+    }
+    
+    public String getKey() {
+        return key;
     }
 }
