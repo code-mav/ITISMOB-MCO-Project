@@ -48,6 +48,7 @@ public class DashboardFragment extends Fragment {
     private Spinner spinnerStreaks;
     private LinearLayout streaksContainer;
     private SwitchCompat toggleDailySwitch, toggleStreakSwitch;
+    private View streakTimerCard, previousStreaksCard;
 
     private DatabaseReference mDatabase;
     private String currentUid;
@@ -72,6 +73,9 @@ public class DashboardFragment extends Fragment {
         restoresLeftView = view.findViewById(R.id.restoresLeft);
         lostStreakMessage = view.findViewById(R.id.lostStreakMessage);
         spinnerStreaks = view.findViewById(R.id.spinnerStreaks);
+        
+        streakTimerCard = view.findViewById(R.id.streakTimerCard);
+        previousStreaksCard = view.findViewById(R.id.previousStreaksCard);
         
         View streakYou = view.findViewById(R.id.streakYou);
         if (streakYou != null) {
@@ -250,6 +254,7 @@ public class DashboardFragment extends Fragment {
                     checkMonthlyRestoreReset();
                     updateRestoreUI();
                     loadFriendsStreaks(spinnerStreaks.getSelectedItemPosition() == 0);
+                    updateCardsVisibility();
                 }
             }
 
@@ -440,8 +445,13 @@ public class DashboardFragment extends Fragment {
     private void loadSwitchStates() {
         if (!isAdded() || getActivity() == null) return;
         SharedPreferences prefs = requireActivity().getSharedPreferences("settings", Context.MODE_PRIVATE);
-        toggleDailySwitch.setChecked(prefs.getBoolean("daily_reminder", true));
-        toggleStreakSwitch.setChecked(prefs.getBoolean("streak_warning", false));
+        boolean daily = prefs.getBoolean("daily_reminder", true);
+        boolean streakWarning = prefs.getBoolean("streak_warning", false);
+        
+        toggleDailySwitch.setChecked(daily);
+        toggleStreakSwitch.setChecked(streakWarning);
+        
+        updateCardsVisibility();
     }
 
     private void saveSwitchState(String key, boolean value) {
@@ -452,5 +462,36 @@ public class DashboardFragment extends Fragment {
         String msg = value ? "enabled" : "disabled";
         String type = key.equals("daily_reminder") ? "Daily reminders" : "Streak warnings";
         Toast.makeText(getContext(), type + " " + msg, Toast.LENGTH_SHORT).show();
+        
+        updateCardsVisibility();
+    }
+    
+    private void updateCardsVisibility() {
+        if (!isAdded() || getActivity() == null) return;
+        
+        SharedPreferences prefs = requireActivity().getSharedPreferences("settings", Context.MODE_PRIVATE);
+        boolean dailyEnabled = prefs.getBoolean("daily_reminder", true);
+        boolean streakWarningEnabled = prefs.getBoolean("streak_warning", false);
+        
+        int currentStreak = (currentUser != null) ? currentUser.streak : 0;
+        
+        // First card: Show only if daily reminders ON
+        // We removed the condition 'currentStreak > 0' as per user request
+        if (streakTimerCard != null) {
+            if (dailyEnabled) {
+                streakTimerCard.setVisibility(View.VISIBLE);
+            } else {
+                streakTimerCard.setVisibility(View.GONE);
+            }
+        }
+        
+        // Third card: Show only if streak warnings ON
+        if (previousStreaksCard != null) {
+            if (streakWarningEnabled) {
+                previousStreaksCard.setVisibility(View.VISIBLE);
+            } else {
+                previousStreaksCard.setVisibility(View.GONE);
+            }
+        }
     }
 }
