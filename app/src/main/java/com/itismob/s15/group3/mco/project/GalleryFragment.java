@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -307,7 +308,7 @@ public class GalleryFragment extends Fragment {
 
     private void rebuildFilterOptions() {
         // Use sets to avoid duplicates
-        Set<String> dateSet = new HashSet<>();
+        Set<String> dateSet = new LinkedHashSet<>();
         Set<String> friendSet = new HashSet<>();
 
         for (GalleryItem item : allItems) {
