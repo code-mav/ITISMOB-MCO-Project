@@ -57,6 +57,9 @@ public class DashboardFragment extends Fragment {
     private static final String CHANNEL_ID = "SNAPBIT_CHANNEL";
     private boolean dailyNotified = false;
     private boolean streakWarningNotified = false;
+    
+    // Static variable to ensure reminders are shown only once per user session (login)
+    private static String reminderShownForUid = null;
 
     public DashboardFragment() {}
 
@@ -112,7 +115,7 @@ public class DashboardFragment extends Fragment {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             CharSequence name = "SnapBit Notifications";
             String description = "Reminders for streaks";
-            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+            int importance = NotificationManager.IMPORTANCE_HIGH;
             NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
             channel.setDescription(description);
             NotificationManager notificationManager = requireContext().getSystemService(NotificationManager.class);
@@ -126,7 +129,8 @@ public class DashboardFragment extends Fragment {
                 .setSmallIcon(android.R.drawable.ic_dialog_info) // Replace with app icon if available
                 .setContentTitle(title)
                 .setContentText(content)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setDefaults(NotificationCompat.DEFAULT_ALL);
 
         NotificationManager notificationManager = (NotificationManager) requireContext().getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.notify((int) System.currentTimeMillis(), builder.build());
@@ -209,11 +213,12 @@ public class DashboardFragment extends Fragment {
         // 6 hours left (allow some buffer for timer tick)
         if (millisUntilFinished <= sixHoursMillis && millisUntilFinished > (sixHoursMillis - 60000)) {
             if (dailyEnabled && !dailyNotified) {
-                sendNotification("New day", "A new day is up and you should do your streak! 6 hours left.");
+                sendNotification("Daily reminder", "A new day to continue your streak!");
                 dailyNotified = true;
             }
-            if (streakEnabled && !streakWarningNotified) {
-                sendNotification("Streak Warning", "Your streak is about to end!");
+            // Only warn if there's an active streak
+            if (streakEnabled && !streakWarningNotified && currentUser != null && currentUser.streak > 0) {
+                sendNotification("Streak warnings", "Your streak is about to run out!");
                 streakWarningNotified = true;
             }
         }
@@ -250,12 +255,48 @@ public class DashboardFragment extends Fragment {
                     checkMonthlyRestoreReset();
                     updateRestoreUI();
                     loadFriendsStreaks(spinnerStreaks.getSelectedItemPosition() == 0);
+                    checkLoginReminders();
                 }
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {}
         });
+    }
+
+    private void checkLoginReminders() {
+        if (!isAdded() || getActivity() == null || currentUser == null) return;
+
+        // Prevent showing multiple times per user session
+        if (currentUid != null && currentUid.equals(reminderShownForUid)) return;
+
+        SharedPreferences prefs = requireActivity().getSharedPreferences("settings", Context.MODE_PRIVATE);
+        boolean dailyEnabled = prefs.getBoolean("daily_reminder", true);
+        boolean streakEnabled = prefs.getBoolean("streak_warning", false);
+
+        // Check if streak maintained today
+        Calendar last = Calendar.getInstance();
+        last.setTimeInMillis(currentUser.lastStreakUpdate);
+        Calendar now = Calendar.getInstance();
+        boolean maintainedToday = last.get(Calendar.YEAR) == now.get(Calendar.YEAR) &&
+                last.get(Calendar.DAY_OF_YEAR) == now.get(Calendar.DAY_OF_YEAR);
+
+        if (!maintainedToday) {
+            if (dailyEnabled) {
+                String msg = "Daily reminder: A new day to continue your streak!";
+                Toast.makeText(getContext(), msg, Toast.LENGTH_LONG).show();
+                sendNotification("Daily reminder", "A new day to continue your streak!");
+            }
+            
+            // Check if streak is active (from yesterday)
+            if (streakEnabled && currentUser.streak > 0) {
+                String msg = "Streak warnings: Your streak is about to run out!";
+                Toast.makeText(getContext(), msg, Toast.LENGTH_LONG).show();
+                sendNotification("Streak warnings", "Your streak is about to run out!");
+            }
+        }
+
+        reminderShownForUid = currentUid;
     }
 
     // Restore reset logic: Every month reset to 3, do not stack
@@ -448,9 +489,16 @@ public class DashboardFragment extends Fragment {
         if (!isAdded() || getActivity() == null) return;
         SharedPreferences prefs = requireActivity().getSharedPreferences("settings", Context.MODE_PRIVATE);
         prefs.edit().putBoolean(key, value).apply();
-        
-        String msg = value ? "enabled" : "disabled";
-        String type = key.equals("daily_reminder") ? "Daily reminders" : "Streak warnings";
-        Toast.makeText(getContext(), type + " " + msg, Toast.LENGTH_SHORT).show();
+
+        if (value) {
+            if (key.equals("daily_reminder")) {
+                Toast.makeText(getContext(), "Daily reminder: A new day to continue your streak!", Toast.LENGTH_SHORT).show();
+            } else if (key.equals("streak_warning")) {
+                Toast.makeText(getContext(), "Streak warnings: Your streak is about to run out!", Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            String type = key.equals("daily_reminder") ? "Daily reminders" : "Streak warnings";
+            Toast.makeText(getContext(), type + " disabled", Toast.LENGTH_SHORT).show();
+        }
     }
 }
