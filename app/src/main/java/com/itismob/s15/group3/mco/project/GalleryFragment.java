@@ -129,14 +129,14 @@ public class GalleryFragment extends Fragment {
 
         dateOptions.add(ALL_DATES);
         habitOptions.add(ALL_HABITS);
-        
+
         // Add fixed categories
         habitOptions.add(CAT_FITNESS);
         habitOptions.add(CAT_LEARNING);
         habitOptions.add(CAT_HEALTH);
         habitOptions.add(CAT_CREATIVITY);
         habitOptions.add(CAT_PRODUCTIVITY);
-        
+
         friendOptions.add(ALL_FRIENDS);
 
         dateAdapter = new ArrayAdapter<>(requireContext(),
@@ -194,7 +194,14 @@ public class GalleryFragment extends Fragment {
                 if (!userSnap.exists()) return;
 
                 String myName = userSnap.child("fullName").getValue(String.class);
-                if (myName == null) myName = "You";
+
+                // Build label "You (Name)" or fallback "You"
+                String meLabel;
+                if (myName != null && !myName.trim().isEmpty()) {
+                    meLabel = "You (" + myName + ")";
+                } else {
+                    meLabel = "You";
+                }
 
                 // Collect all user IDs to load: you + friends
                 Set<String> idsToLoad = new HashSet<>();
@@ -210,7 +217,7 @@ public class GalleryFragment extends Fragment {
 
                 // Attach a real-time listener per user id
                 for (String id : idsToLoad) {
-                    String overrideName = id.equals(uid) ? "You" : null;
+                    String overrideName = id.equals(uid) ? meLabel : null;
                     attachProofListenerForUser(usersRef, id, overrideName);
                 }
             }
@@ -231,7 +238,7 @@ public class GalleryFragment extends Fragment {
         usersRef.child(userId).addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot userSnap) {
-                // If user node deleted or null, clear items for this user
+                // If user node deleted, clear items for this user
                 if (!userSnap.exists()) {
                     List<GalleryItem> toRemove = new ArrayList<>();
                     for (GalleryItem item : allItems) {
@@ -285,7 +292,15 @@ public class GalleryFragment extends Fragment {
                         }
                     }
 
-                    GalleryItem item = new GalleryItem(bitmap, name, category, title, userId, timestamp, proofKey);
+                    GalleryItem item = new GalleryItem(
+                            bitmap,
+                            name,       // "You (Name)" or friend name
+                            category,
+                            title,      // image name
+                            userId,
+                            timestamp,
+                            proofKey
+                    );
                     allItems.add(item);
                 }
 
@@ -329,24 +344,22 @@ public class GalleryFragment extends Fragment {
         List<String> newDates = new ArrayList<>();
         newDates.add(ALL_DATES);
         newDates.addAll(dateSet);
-        // Only update adapter if changed to avoid flickering or resetting selection unnecessarily
         if (!newDates.equals(dateOptions)) {
             dateOptions.clear();
             dateOptions.addAll(newDates);
             dateAdapter.notifyDataSetChanged();
-             if (selectedDate != null && dateOptions.contains(selectedDate)) {
+            if (selectedDate != null && dateOptions.contains(selectedDate)) {
                 spinnerDate.setSelection(dateOptions.indexOf(selectedDate));
             } else {
                 spinnerDate.setSelection(0);
             }
         }
 
-        // Habit options are FIXED now, so we don't rebuild them dynamically from items
-        // But we ensure the selection is kept
+        // Habit options are FIXED now, so we don't rebuild them dynamically
         if (selectedHabit != null && habitOptions.contains(selectedHabit)) {
             spinnerHabit.setSelection(habitOptions.indexOf(selectedHabit));
         } else {
-             spinnerHabit.setSelection(0);
+            spinnerHabit.setSelection(0);
         }
 
         // Update Friend options
