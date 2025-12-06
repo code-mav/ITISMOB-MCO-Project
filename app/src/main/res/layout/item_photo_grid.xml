@@ -58,5 +58,14 @@
             android:textColor="#FFD700"
             android:textSize="12sp"
             android:textStyle="bold"/>
+
+        <TextView
+            android:id="@+id/tvDateTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="2025-01-14 18:20"
+            android:textColor="#CCCCCC"
+            android:textSize="11sp"
+            android:layout_marginTop="2dp" />
     </LinearLayout>
 </FrameLayout>
