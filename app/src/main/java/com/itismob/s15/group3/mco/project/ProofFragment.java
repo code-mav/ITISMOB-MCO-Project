@@ -13,8 +13,10 @@ import android.os.Bundle;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -32,7 +34,6 @@ import com.itismob.s15.group3.mco.project.models.UserActivity;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,19 +41,25 @@ public class ProofFragment extends Fragment {
 
     private static final int REQ_CAMERA = 1001;
 
-    ImageView capturedIv;
-    Button submitBtn, snapDemoBtn;
+    // Match DashboardFragment + HomeFragment
+    // true  = 1-minute window demo; false = 24-hour window
+    private static final boolean DEMO_MODE = false;
+    private static final long DAY_WINDOW_MILLIS =
+            DEMO_MODE ? 60_000L : 24L * 60L * 60L * 1000L;
 
-    Bitmap currentBitmap;
+    private ImageView capturedIv;
+    private Button submitBtn, snapDemoBtn;
 
-    ActivityResultLauncher<Void> cameraPreviewLauncher;
-    ActivityResultLauncher<Intent> galleryLauncher;
+    private Bitmap currentBitmap;
 
-    DatabaseReference mDatabase;
-    String currentUid;
+    private ActivityResultLauncher<Void> cameraPreviewLauncher;
+    private ActivityResultLauncher<Intent> galleryLauncher;
 
-    String category = "Fitness";
-    String title = "Daily Streak";
+    private DatabaseReference mDatabase;
+    private String currentUid;
+
+    private String category = "Fitness";
+    private String title = "Daily Streak";
 
     public ProofFragment() {}
 
@@ -60,7 +67,7 @@ public class ProofFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Get arguments
+        // Get arguments from HomeFragment
         if (getArguments() != null) {
             category = getArguments().getString("category", "Fitness");
             title = getArguments().getString("title", "Daily Streak");
@@ -71,7 +78,7 @@ public class ProofFragment extends Fragment {
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
 
         View v = inflater.inflate(R.layout.fragment_proof, container, false);
@@ -82,8 +89,12 @@ public class ProofFragment extends Fragment {
         capturedIv = v.findViewById(R.id.capturedIv);
 
         mDatabase = FirebaseDatabase.getInstance().getReference();
-        SharedPreferences prefs = requireActivity().getSharedPreferences("user", Context.MODE_PRIVATE);
-        currentUid = prefs.getString("uid", null);
+
+        FragmentActivity activity = getActivity();
+        if (activity != null) {
+            SharedPreferences prefs = activity.getSharedPreferences("user", Context.MODE_PRIVATE);
+            currentUid = prefs.getString("uid", null);
+        }
 
         captureBtn.setOnClickListener(view -> {
             if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
@@ -100,17 +111,25 @@ public class ProofFragment extends Fragment {
         return v;
     }
 
+    // -------------------------------------------------------
+    // CAMERA + GALLERY
+    // -------------------------------------------------------
+
     private void setupCameraLauncher() {
         cameraPreviewLauncher = registerForActivityResult(
                 new ActivityResultContracts.TakePicturePreview(),
                 bitmap -> {
+                    if (!isAdded()) return;
+
                     if (bitmap != null) {
                         currentBitmap = bitmap;
                         capturedIv.setImageBitmap(bitmap);
-                    } else {
-                        Toast.makeText(getContext(),
+                    } else if (getContext() != null) {
+                        Toast.makeText(
+                                getContext(),
                                 "Camera returned null.\n(Enable emulator camera in AVD settings)",
-                                Toast.LENGTH_LONG).show();
+                                Toast.LENGTH_LONG
+                        ).show();
                     }
                 }
         );
@@ -124,22 +143,31 @@ public class ProofFragment extends Fragment {
         galleryLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
+                    if (!isAdded()) return;
+
                     if (result.getResultCode() == Activity.RESULT_OK &&
                             result.getData() != null) {
 
                         Uri selectedImage = result.getData().getData();
 
                         try {
-                            InputStream stream = requireActivity()
+                            FragmentActivity activity = getActivity();
+                            if (activity == null) return;
+
+                            InputStream stream = activity
                                     .getContentResolver()
                                     .openInputStream(selectedImage);
 
                             currentBitmap = BitmapFactory.decodeStream(stream);
                             capturedIv.setImageBitmap(currentBitmap);
                         } catch (Exception e) {
-                            Toast.makeText(getContext(),
-                                    "Failed to load image",
-                                    Toast.LENGTH_SHORT).show();
+                            if (getContext() != null) {
+                                Toast.makeText(
+                                        getContext(),
+                                        "Failed to load image",
+                                        Toast.LENGTH_SHORT
+                                ).show();
+                            }
                         }
                     }
                 }
@@ -156,17 +184,21 @@ public class ProofFragment extends Fragment {
     // SUBMIT PROOF
     // -------------------------------------------------------
     private void submitProof() {
-
         if (currentBitmap == null) {
-            Toast.makeText(getContext(), "Take or select a photo first", Toast.LENGTH_SHORT).show();
+            if (getContext() != null) {
+                Toast.makeText(getContext(), "Take or select a photo first", Toast.LENGTH_SHORT).show();
+            }
             return;
         }
 
         if (currentUid == null) {
-            Toast.makeText(getContext(), "User not logged in", Toast.LENGTH_SHORT).show();
+            if (getContext() != null) {
+                Toast.makeText(getContext(), "User not logged in", Toast.LENGTH_SHORT).show();
+            }
             return;
         }
 
+        // Convert bitmap to Base64
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         currentBitmap.compress(Bitmap.CompressFormat.JPEG, 70, baos);
         String encodedImage = android.util.Base64.encodeToString(
@@ -180,6 +212,13 @@ public class ProofFragment extends Fragment {
                 .push()
                 .getKey();
 
+        if (key == null) {
+            if (getContext() != null) {
+                Toast.makeText(getContext(), "Failed to create proof key", Toast.LENGTH_SHORT).show();
+            }
+            return;
+        }
+
         Map<String, Object> proof = new HashMap<>();
         proof.put("category", category);
         proof.put("title", title);
@@ -192,86 +231,128 @@ public class ProofFragment extends Fragment {
                 .child(key)
                 .setValue(proof)
                 .addOnSuccessListener(unused -> {
+                    if (!isAdded() || getContext() == null) return;
                     Toast.makeText(getContext(), "Submitted!", Toast.LENGTH_SHORT).show();
-                    updateStreakAndLog();
+                    updateCategoryStreakAndLog();
                 })
-                .addOnFailureListener(e ->
-                        Toast.makeText(getContext(), "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show());
-    }
-
-    private void updateStreakAndLog() {
-
-        mDatabase.child("users").child(currentUid)
-                .addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(DataSnapshot snapshot) {
-
-                        long lastUpdate = snapshot.child("lastStreakUpdate").getValue(Long.class) != null
-                                ? snapshot.child("lastStreakUpdate").getValue(Long.class)
-                                : 0;
-
-                        int streak = snapshot.child("streak").getValue(Integer.class) != null
-                                ? snapshot.child("streak").getValue(Integer.class)
-                                : 0;
-
-                        long now = System.currentTimeMillis();
-
-                        // 1 minute = 60,000 milliseconds
-                        long oneMinute = 60 * 1000;
-
-                        int newStreak;
-
-                        if (lastUpdate == 0) {
-                            // First ever submission
-                            newStreak = 1;
-
-                        } else if (now - lastUpdate <= oneMinute) {
-                            // Within 1 minute -> consecutive!
-                            newStreak = streak + 1;
-
-                        } else {
-                            // More than 1 minute -> streak broken
-                            if (streak > 0) {
-                                mDatabase.child("users").child(currentUid)
-                                        .child("lostStreak").setValue(streak);
-                            }
-                            newStreak = 1;
-                        }
-
-                        // Save new streak + update timestamp
-                        Map<String, Object> updates = new HashMap<>();
-                        updates.put("streak", newStreak);
-                        updates.put("lastStreakUpdate", now);
-
-                        mDatabase.child("users").child(currentUid).updateChildren(updates);
-
-                        // Log activity
-                        logActivity("Streak Updated",
-                                "Your streak is now " + newStreak + " steps.");
-
-                        navigateToGallery();
-                    }
-
-                    @Override
-                    public void onCancelled(DatabaseError error) {
-                        navigateToGallery();
-                    }
+                .addOnFailureListener(e -> {
+                    if (!isAdded() || getContext() == null) return;
+                    Toast.makeText(
+                            getContext(),
+                            "Error saving proof: " + e.getMessage(),
+                            Toast.LENGTH_SHORT
+                    ).show();
                 });
     }
 
+    // -------------------------------------------------------
+    // PER-CATEGORY STREAK LOGIC (1 min or 24h window)
+    // -------------------------------------------------------
+    private void updateCategoryStreakAndLog() {
+        if (currentUid == null) {
+            navigateToGallerySafe();
+            return;
+        }
+
+        DatabaseReference categoryRef = mDatabase.child("users")
+                .child(currentUid)
+                .child("categoryStreaks")
+                .child(category);
+
+        categoryRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (!isAdded()) return;
+
+                long now = System.currentTimeMillis();
+                long window = DAY_WINDOW_MILLIS; // 1 min in demo, 24h in real
+
+                Long lastUpdate = snapshot.child("lastUpdateMillis").getValue(Long.class);
+                Integer currentStreak = snapshot.child("currentStreak").getValue(Integer.class);
+                Integer lostStreak = snapshot.child("lostStreak").getValue(Integer.class);
+                Integer bestStreak = snapshot.child("bestStreak").getValue(Integer.class);
+
+                if (currentStreak == null) currentStreak = 0;
+                if (lostStreak == null) lostStreak = 0;
+                if (bestStreak == null) bestStreak = 0;
+                if (lastUpdate == null) lastUpdate = 0L;
+
+                int newCurrentStreak;
+                int newLostStreak = lostStreak;
+
+                if (lastUpdate == 0L) {
+                    // First ever submission for this category
+                    newCurrentStreak = 1;
+                    newLostStreak = 0;
+                } else if (now - lastUpdate <= window) {
+                    // Within the current window → streak continues
+                    newCurrentStreak = currentStreak + 1;
+                } else {
+                    // Outside the window → streak broken, remember lost streak
+                    if (currentStreak > 0) {
+                        newLostStreak = currentStreak;
+                    }
+                    newCurrentStreak = 1;
+                }
+
+                int newBestStreak = Math.max(bestStreak, newCurrentStreak);
+
+                Map<String, Object> updates = new HashMap<>();
+                updates.put("currentStreak", newCurrentStreak);
+                updates.put("lostStreak", newLostStreak);
+                updates.put("bestStreak", newBestStreak);
+                updates.put("lastUpdateMillis", now);
+
+                categoryRef.updateChildren(updates);
+
+                // Also update /users/{uid}/lastStreakUpdate for Dashboard reminders
+                mDatabase.child("users")
+                        .child(currentUid)
+                        .child("lastStreakUpdate")
+                        .setValue(now);
+
+                // Log activity
+                logActivity(
+                        "Streak Updated",
+                        category + " streak is now " + newCurrentStreak + " days."
+                );
+
+                navigateToGallerySafe();
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                navigateToGallerySafe();
+            }
+        });
+    }
 
     private void logActivity(String title, String desc) {
+        if (currentUid == null) return;
+
         String key = mDatabase.child("activities")
                 .child(currentUid)
                 .push()
                 .getKey();
 
-        UserActivity activity = new UserActivity(title, desc, System.currentTimeMillis());
-        mDatabase.child("activities").child(currentUid).child(key).setValue(activity);
+        if (key == null) return;
+
+        UserActivity activity =
+                new UserActivity(title, desc, System.currentTimeMillis());
+
+        mDatabase.child("activities")
+                .child(currentUid)
+                .child(key)
+                .setValue(activity);
     }
 
-    private void navigateToGallery() {
-        requireActivity().getSupportFragmentManager()
+    private void navigateToGallerySafe() {
+        if (!isAdded()) return;
+
+        FragmentActivity activity = getActivity();
+        if (activity == null) return;
+
+        activity.getSupportFragmentManager()
                 .beginTransaction()
                 .replace(R.id.fragment_container, new GalleryFragment())
                 .addToBackStack(null)
