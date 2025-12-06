@@ -33,6 +33,11 @@ import androidx.annotation.NonNull;
 
 public class HomeFragment extends Fragment {
 
+    // Match with DashboardFragment + ProofFragment
+    private static final boolean DEMO_MODE = false; // true = 1-minute window demo, false = real 24h
+    private static final long DAY_WINDOW_MILLIS =
+            DEMO_MODE ? 60_000L : 24L * 60L * 60L * 1000L;
+
     // Fixed categories
     private static final String CAT_FITNESS = "Fitness";
     private static final String CAT_LEARNING = "Learning";
@@ -40,7 +45,7 @@ public class HomeFragment extends Fragment {
     private static final String CAT_CREATIVITY = "Creativity";
     private static final String CAT_PRODUCTIVITY = "Productivity";
 
-    // Streak values (now loaded from Firebase)
+    // Streak values (now loaded from Firebase and used to sync /users node)
     private int fitnessStreak = 0;
     private int learningStreak = 0;
     private int healthStreak = 0;
@@ -66,7 +71,7 @@ public class HomeFragment extends Fragment {
 
     private final SimpleDateFormat dayFormat =
             new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-            
+
     private DatabaseReference mDatabase;
     private String currentUid;
 
@@ -98,7 +103,7 @@ public class HomeFragment extends Fragment {
         titleEditText = v.findViewById(R.id.edittext_title);
         submitProofBtn = v.findViewById(R.id.submitProofBtn);
         FloatingActionButton infoFab = v.findViewById(R.id.infoFab);
-        
+
         mDatabase = FirebaseDatabase.getInstance().getReference();
         if (getActivity() != null) {
             currentUid = getActivity()
@@ -112,7 +117,7 @@ public class HomeFragment extends Fragment {
         setupSubmitButton();
         setupInfoFab(infoFab);
 
-        // Load real streaks from Firebase
+        // Load streaks from Firebase
         loadStreaksFromFirebase();
 
         return v;
@@ -180,7 +185,7 @@ public class HomeFragment extends Fragment {
             requireActivity().getSupportFragmentManager()
                     .beginTransaction()
                     .replace(R.id.fragment_container, proofFragment)
-                    .addToBackStack(null) // Add to backstack
+                    .addToBackStack(null)
                     .commit();
         });
     }
@@ -207,6 +212,42 @@ public class HomeFragment extends Fragment {
             return;
         }
 
+        // DEMO MODE: Just mirror what /users already has so everything matches
+        if (DEMO_MODE) {
+            DatabaseReference userRef = FirebaseDatabase.getInstance()
+                    .getReference("users")
+                    .child(currentUid);
+
+            userRef.addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    Integer fit = snapshot.child("fitnessStreak").getValue(Integer.class);
+                    Integer learn = snapshot.child("learningStreak").getValue(Integer.class);
+                    Integer health = snapshot.child("healthStreak").getValue(Integer.class);
+                    Integer creat = snapshot.child("creativityStreak").getValue(Integer.class);
+                    Integer prod = snapshot.child("productivityStreak").getValue(Integer.class);
+
+                    fitnessStreak = (fit != null) ? fit : 0;
+                    learningStreak = (learn != null) ? learn : 0;
+                    healthStreak = (health != null) ? health : 0;
+                    creativityStreak = (creat != null) ? creat : 0;
+                    productivityStreak = (prod != null) ? prod : 0;
+
+                    updateStreakViews();
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    Toast.makeText(getContext(),
+                            "Failed to load streaks: " + error.getMessage(),
+                            Toast.LENGTH_SHORT).show();
+                }
+            });
+
+            return; // Skip proofs-based computation in demo mode
+        }
+
+        // REAL MODE: original logic based on proof timestamps per day
         DatabaseReference proofsRef = FirebaseDatabase.getInstance()
                 .getReference("users")
                 .child(currentUid)
@@ -215,14 +256,15 @@ public class HomeFragment extends Fragment {
         proofsRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
+
                 // Sets of days (yyyy-MM-dd) where there is at least one proof for that category
                 Set<String> fitnessDays = new HashSet<>();
                 Set<String> learningDays = new HashSet<>();
                 Set<String> healthDays = new HashSet<>();
                 Set<String> creativityDays = new HashSet<>();
                 Set<String> productivityDays = new HashSet<>();
-                
-                // For calculating total valid days regardless of category (for dashboard sync)
+
+                // For calculating total valid days regardless of category
                 Set<String> allValidDays = new HashSet<>();
 
                 for (DataSnapshot proofSnap : snapshot.getChildren()) {
@@ -253,18 +295,21 @@ public class HomeFragment extends Fragment {
                     }
                 }
 
+                // Compute per-category streaks
                 fitnessStreak = computeStreak(fitnessDays);
                 learningStreak = computeStreak(learningDays);
                 healthStreak = computeStreak(healthDays);
                 creativityStreak = computeStreak(creativityDays);
                 productivityStreak = computeStreak(productivityDays);
-                
-                // Update total streak on Dashboard (syncing)
-                // Logic: "each day as long as you uploaded a photo for streak, the streak should still be on going even if its a different category"
-                // This means we compute streak based on `allValidDays`
+
+                // Global total streak = "as long as you uploaded something
+                // in any category on that day"
                 int totalStreak = computeStreak(allValidDays);
+
+                // Sync into /users/{uid} so Dashboard + FriendsLeaderboard can read
                 updateTotalStreakOnDashboard(totalStreak);
 
+                // Update UI
                 updateStreakViews();
             }
 
@@ -276,13 +321,25 @@ public class HomeFragment extends Fragment {
             }
         });
     }
-    
+
     private void updateTotalStreakOnDashboard(int calculatedStreak) {
-        // We can update the user's main 'streak' value in Firebase if it differs
-        // This ensures dashboard (which reads from /users/{uid}/streak) is synced
-        if (currentUid != null) {
-             mDatabase.child("users").child(currentUid).child("streak").setValue(calculatedStreak);
-        }
+        if (currentUid == null) return;
+
+        // Build a single update map for Firebase
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("streak", calculatedStreak);
+        updates.put("fitnessStreak", fitnessStreak);
+        updates.put("learningStreak", learningStreak);
+        updates.put("healthStreak", healthStreak);
+        updates.put("creativityStreak", creativityStreak);
+        updates.put("productivityStreak", productivityStreak);
+
+        // We let ProofFragment handle lastStreakUpdate when a proof is submitted,
+        // so we do not overwrite it here.
+
+        mDatabase.child("users")
+                .child(currentUid)
+                .updateChildren(updates);
     }
 
     // Count consecutive days up to today where the date is in the set
@@ -290,33 +347,26 @@ public class HomeFragment extends Fragment {
         if (daySet.isEmpty()) return 0;
 
         Calendar cal = Calendar.getInstance();
-        
-        // Check today first
+
         String today = dayFormat.format(cal.getTime());
-        
         int streak = 0;
-        // If today is present, streak starts from today
-        // If today is NOT present, check yesterday. If yesterday present, streak maintained (just haven't done today yet)
-        // If yesterday also not present, streak is 0.
-        
+
+        // If today is present, we start the streak from today.
+        // If not, we check from yesterday. If yesterday is missing too, streak is 0.
         boolean streakActiveToday = daySet.contains(today);
-        
-        if (streakActiveToday) {
-            // Count backwards from today
-        } else {
-            // Check yesterday
+
+        if (!streakActiveToday) {
             cal.add(Calendar.DAY_OF_MONTH, -1);
             String yesterday = dayFormat.format(cal.getTime());
             if (!daySet.contains(yesterday)) {
                 return 0; // Broken
             }
-            // Start counting from yesterday
         }
-        
-        // Reset cal to start counting
+
+        // Reset baseline to today or yesterday depending on streakActiveToday
         cal = Calendar.getInstance();
         if (!streakActiveToday) {
-             cal.add(Calendar.DAY_OF_MONTH, -1);
+            cal.add(Calendar.DAY_OF_MONTH, -1);
         }
 
         while (true) {
@@ -328,6 +378,7 @@ public class HomeFragment extends Fragment {
                 break;
             }
         }
+
         return streak;
     }
 }
