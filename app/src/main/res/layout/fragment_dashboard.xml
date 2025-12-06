@@ -21,7 +21,7 @@
             android:textStyle="bold"
             android:paddingTop="15dp"
             android:textColor="@android:color/black"
-            android:layout_marginBottom="16dp"/>
+            android:layout_marginBottom="16dp" />
 
         <!-- Streak Logo -->
         <ImageView
@@ -80,7 +80,7 @@
                     android:max="100"
                     android:progressTint="@color/black"
                     android:backgroundTint="#E0E0E0"
-                    android:layout_marginBottom="8dp"/>
+                    android:layout_marginBottom="8dp" />
 
                 <TextView
                     android:id="@+id/tvStreakReminder"
@@ -94,16 +94,16 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Current Streaks Card -->
+        <!-- CURRENT STREAKS CARD (PER-CATEGORY RESTORE) -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/currentStreaksCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
             app:cardCornerRadius="16dp"
-            app:cardElevation="4dp"
+            app:cardElevation="3dp"
             app:strokeColor="#E0E0E0"
-            app:strokeWidth="1dp"
-            android:layout_marginBottom="24dp">
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -111,7 +111,7 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <!-- Title + Dropdown Row -->
+                <!-- Title + Category Dropdown -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -130,54 +130,65 @@
                         android:textColor="#000000" />
 
                     <Spinner
-                        android:id="@+id/spinnerStreaks"
+                        android:id="@+id/spinnerCategory"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:entries="@array/sample_streaks"
                         android:spinnerMode="dropdown"
                         android:layout_marginStart="8dp"
-                        android:paddingHorizontal="4dp"
-                        android:backgroundTint="@android:color/darker_gray"/>
+                        android:paddingHorizontal="4dp" />
                 </LinearLayout>
 
                 <TextView
-                    android:id="@+id/streakYou"
+                    android:id="@+id/textSelectedCategoryStreak"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Maverick - 20 days (You)"
+                    android:text="Streak: 0 days"
                     android:textSize="16sp"
-                    android:textColor="#333333"
-                    android:layout_marginBottom="6dp"/>
+                    android:textColor="#000000"
+                    android:layout_marginBottom="8dp" />
+
+                <Button
+                    android:id="@+id/btnRestore"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Restore Streak"
+                    android:textSize="14sp"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="6dp"
+                    android:backgroundTint="#E0E0E0"
+                    android:textColor="@android:color/white"
+                    android:enabled="false"
+                    android:layout_marginBottom="8dp" />
 
                 <TextView
-                    android:id="@+id/streakFriend1"
+                    android:id="@+id/restoresLeft"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Hana - 15 days"
-                    android:textSize="16sp"
-                    android:textColor="#333333"
-                    android:layout_marginBottom="6dp"/>
+                    android:text="Restores left this month: 0 / 3"
+                    android:textSize="14sp"
+                    android:textColor="#555555"
+                    android:layout_marginBottom="6dp" />
 
                 <TextView
-                    android:id="@+id/streakFriend2"
+                    android:id="@+id/restoreHint"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Ced - 10 days"
-                    android:textSize="16sp"
-                    android:textColor="#333333"/>
+                    android:text="Tap a category's streak you want to restore."
+                    android:textSize="13sp"
+                    android:textColor="#777777" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Previous Streaks Card -->
+        <!-- HIGHEST STREAKS CARD (DROPDOWN) -->
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/previousStreaksCard"
+            android:id="@+id/highestStreaksCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
             app:cardCornerRadius="16dp"
-            app:cardElevation="4dp"
+            app:cardElevation="3dp"
             app:strokeColor="#E0E0E0"
-            app:strokeWidth="1dp"
-            android:layout_marginBottom="24dp">
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -185,16 +196,7 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <TextView
-                    android:id="@+id/previousStreaksTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="⚠️ Previous Streaks"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:textColor="#000000"
-                    android:layout_marginBottom="12dp" />
-
+                <!-- Title + small dropdown -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -203,36 +205,31 @@
                     android:layout_marginBottom="8dp">
 
                     <TextView
-                        android:id="@+id/lostStreakMessage"
+                        android:id="@+id/highestStreaksTitle"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Gym: 3 Days"
-                        android:textSize="15sp"
-                        android:textColor="#444444"
-                        android:layout_marginEnd="8dp"/>
+                        android:text="🏆 Highest Streak per Category"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#000000" />
 
-                    <Button
-                        android:id="@+id/btnRestore"
+                    <Spinner
+                        android:id="@+id/spinnerBestCategory"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Restore"
-                        android:textSize="14sp"
-                        android:paddingHorizontal="12dp"
-                        android:paddingVertical="4dp"
-                        android:backgroundTint="@android:color/darker_gray"
-                        android:textColor="@android:color/white"
-                        android:enabled="false" />
+                        android:spinnerMode="dropdown"
+                        android:layout_marginStart="8dp"
+                        android:paddingHorizontal="4dp" />
                 </LinearLayout>
 
                 <TextView
-                    android:id="@+id/restoresLeft"
+                    android:id="@+id/textBestSelectedStreak"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Restores left for this month: 0"
-                    android:textSize="14sp"
-                    android:textColor="#AA0000"
-                    android:textStyle="italic" />
+                    android:text="Fitness: 0 days"
+                    android:textSize="15sp"
+                    android:textColor="#333333" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -261,5 +258,6 @@
                 android:textColor="#333333"
                 android:checked="false" />
         </LinearLayout>
+
     </LinearLayout>
 </ScrollView>
