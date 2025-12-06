@@ -13,7 +13,6 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -22,6 +21,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.google.firebase.database.DataSnapshot;
@@ -32,33 +32,62 @@ import com.google.firebase.database.ValueEventListener;
 import com.itismob.s15.group3.mco.project.models.User;
 import com.itismob.s15.group3.mco.project.models.UserActivity;
 
-import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class DashboardFragment extends Fragment {
 
-    private TextView tvStreakTimer, restoresLeftView, lostStreakMessage;
+    // ----------------------------------------------------
+    // DEMO MODE TOGGLE
+    // ----------------------------------------------------
+    // true  = 1-minute "day" with 30-second warning (for demo)
+    // false = real 24-hour day with 6-hour warning
+    //
+    // TURN THIS TO false AGAIN BEFORE FINAL SUBMISSION.
+    private static final boolean DEMO_MODE = false;
+
+    private static final long DAY_WINDOW_MILLIS =
+            DEMO_MODE ? 60_000L : 24L * 60L * 60L * 1000L;
+
+    private static final long WARNING_WINDOW_MILLIS =
+            DEMO_MODE ? 30_000L : 6L * 60L * 60L * 1000L;
+
+    // UI
+    private TextView tvStreakTimer;
+    private TextView restoresLeftView;
+    private TextView textSelectedCategoryStreak;
+    private TextView textBestSelectedStreak;
+
     private ProgressBar streakProgressBar;
     private Button btnRestore;
-    private Spinner spinnerStreaks;
-    private LinearLayout streaksContainer;
-    private SwitchCompat toggleDailySwitch, toggleStreakSwitch;
+    private Spinner spinnerCategory;
+    private Spinner spinnerBestCategory;
+    private SwitchCompat toggleDailySwitch;
+    private SwitchCompat toggleStreakSwitch;
 
+    // Firebase
     private DatabaseReference mDatabase;
     private String currentUid;
-    private User currentUser;
+    public User currentUser;   // made public so other classes can read if needed
+
+    // Timer
     private CountDownTimer timer;
 
+    // Per-category streaks (current, lost, best)
+    // currentX = CURRENT streak from /users/{uid} (computed by HomeFragment)
+    // bestX    = LIFETIME best from /users/{uid}/categoryStreaks
+    private int fitnessCurrent, learningCurrent, healthCurrent, creativityCurrent, productivityCurrent;
+    private int fitnessLost, learningLost, healthLost, creativityLost, productivityLost;
+    private int fitnessBest, learningBest, healthBest, creativityBest, productivityBest;
+
+    // Notifications
     private static final String CHANNEL_ID = "SNAPBIT_CHANNEL";
     private boolean dailyNotified = false;
     private boolean streakWarningNotified = false;
-    
-    // Static variable to ensure reminders are shown only once per user session (login)
+
+    // Optional login-reminder limiter if reused
     private static String reminderShownForUid = null;
 
     public DashboardFragment() {}
@@ -66,92 +95,126 @@ public class DashboardFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+
         View view = inflater.inflate(R.layout.fragment_dashboard, container, false);
 
-        // Initialize Views
+        // Find UI
         tvStreakTimer = view.findViewById(R.id.tvStreakTimer);
         streakProgressBar = view.findViewById(R.id.streakProgressBar);
+
         btnRestore = view.findViewById(R.id.btnRestore);
         restoresLeftView = view.findViewById(R.id.restoresLeft);
-        lostStreakMessage = view.findViewById(R.id.lostStreakMessage);
-        spinnerStreaks = view.findViewById(R.id.spinnerStreaks);
-        
-        View streakYou = view.findViewById(R.id.streakYou);
-        if (streakYou != null) {
-            streaksContainer = (LinearLayout) streakYou.getParent();
-        }
+
+        spinnerCategory = view.findViewById(R.id.spinnerCategory);
+        spinnerBestCategory = view.findViewById(R.id.spinnerBestCategory);
+
+        textSelectedCategoryStreak = view.findViewById(R.id.textSelectedCategoryStreak);
+        textBestSelectedStreak = view.findViewById(R.id.textBestSelectedStreak);
 
         toggleDailySwitch = view.findViewById(R.id.toggleDailySwitch);
         toggleStreakSwitch = view.findViewById(R.id.toggleStreakSwitch);
 
-        // Initialize Firebase
+        // Firebase
         mDatabase = FirebaseDatabase.getInstance().getReference();
         if (getActivity() != null) {
-            SharedPreferences prefs = requireActivity().getSharedPreferences("user", Context.MODE_PRIVATE);
+            SharedPreferences prefs = requireActivity()
+                    .getSharedPreferences("user", Context.MODE_PRIVATE);
             currentUid = prefs.getString("uid", null);
         }
 
         createNotificationChannel();
+        setupSpinners();
+        loadSwitchStates();
 
-        // Setup Timer
+        if (currentUid != null) {
+            loadUserData();
+        }
+
+        // Start timer
         setupGlobalTimer();
 
-        // Setup UI & Data
-        setupSpinner();
-        loadUserData();
-        
-        // Switches logic
-        loadSwitchStates();
-        toggleDailySwitch.setOnCheckedChangeListener((buttonView, isChecked) -> saveSwitchState("daily_reminder", isChecked));
-        toggleStreakSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> saveSwitchState("streak_warning", isChecked));
+        toggleDailySwitch.setOnCheckedChangeListener(
+                (buttonView, isChecked) -> saveSwitchState("daily_reminder", isChecked)
+        );
+        toggleStreakSwitch.setOnCheckedChangeListener(
+                (buttonView, isChecked) -> saveSwitchState("streak_warning", isChecked)
+        );
 
-        // Restore button
         btnRestore.setOnClickListener(v -> restoreStreak());
 
         return view;
     }
 
+    // ---------------------------
+    // NOTIFICATION CHANNEL
+    // ---------------------------
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             CharSequence name = "SnapBit Notifications";
-            String description = "Reminders for streaks";
+            String description = "Reminders for streaks and warnings";
             int importance = NotificationManager.IMPORTANCE_HIGH;
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
+
+            NotificationChannel channel =
+                    new NotificationChannel(CHANNEL_ID, name, importance);
             channel.setDescription(description);
-            NotificationManager notificationManager = requireContext().getSystemService(NotificationManager.class);
+
+            NotificationManager notificationManager =
+                    requireContext().getSystemService(NotificationManager.class);
             notificationManager.createNotificationChannel(channel);
         }
     }
 
     private void sendNotification(String title, String content) {
         if (!isAdded() || getContext() == null) return;
+
         NotificationCompat.Builder builder = new NotificationCompat.Builder(requireContext(), CHANNEL_ID)
-                .setSmallIcon(android.R.drawable.ic_dialog_info) // Replace with app icon if available
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
                 .setContentTitle(title)
                 .setContentText(content)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setDefaults(NotificationCompat.DEFAULT_ALL);
 
-        NotificationManager notificationManager = (NotificationManager) requireContext().getSystemService(Context.NOTIFICATION_SERVICE);
+        NotificationManager notificationManager =
+                (NotificationManager) requireContext().getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.notify((int) System.currentTimeMillis(), builder.build());
     }
 
+    // ---------------------------
+    // TIMER (24H OR 1-MIN DEMO)
+    // ---------------------------
     private void setupGlobalTimer() {
-        // Calculate time until next midnight
-        Calendar now = Calendar.getInstance();
-        Calendar midnight = Calendar.getInstance();
-        midnight.set(Calendar.HOUR_OF_DAY, 0);
-        midnight.set(Calendar.MINUTE, 0);
-        midnight.set(Calendar.SECOND, 0);
-        midnight.set(Calendar.MILLISECOND, 0);
-        midnight.add(Calendar.DAY_OF_YEAR, 1); // Next day
+        if (!isAdded()) return;
 
-        long timeUntilMidnight = midnight.getTimeInMillis() - now.getTimeInMillis();
-        long totalDayMillis = 24 * 60 * 60 * 1000;
-        long sixHoursMillis = 6 * 60 * 60 * 1000;
+        long durationMillis;
+        long totalDayMillis;
 
-        if (timer != null) timer.cancel();
-        timer = new CountDownTimer(timeUntilMidnight, 1000) {
+        if (DEMO_MODE) {
+            // 1-minute "day" buckets based on current time
+            long now = System.currentTimeMillis();
+            long remainder = now % DAY_WINDOW_MILLIS;
+            long millisUntilEnd = DAY_WINDOW_MILLIS - remainder;
+            durationMillis = millisUntilEnd;
+            totalDayMillis = DAY_WINDOW_MILLIS;
+        } else {
+            // Real mode: time until midnight
+            Calendar nowCal = Calendar.getInstance();
+            Calendar midnight = Calendar.getInstance();
+            midnight.set(Calendar.HOUR_OF_DAY, 0);
+            midnight.set(Calendar.MINUTE, 0);
+            midnight.set(Calendar.SECOND, 0);
+            midnight.set(Calendar.MILLISECOND, 0);
+            midnight.add(Calendar.DAY_OF_YEAR, 1);
+
+            durationMillis = midnight.getTimeInMillis() - nowCal.getTimeInMillis();
+            totalDayMillis = DAY_WINDOW_MILLIS; // 24 hours
+        }
+
+        if (timer != null) {
+            timer.cancel();
+        }
+
+        timer = new CountDownTimer(durationMillis, 1000) {
+            @Override
             public void onTick(long millisUntilFinished) {
                 if (!isAdded() || getContext() == null) {
                     cancel();
@@ -161,28 +224,32 @@ public class DashboardFragment extends Fragment {
                 long hours = TimeUnit.MILLISECONDS.toHours(millisUntilFinished);
                 long minutes = TimeUnit.MILLISECONDS.toMinutes(millisUntilFinished) % 60;
                 long seconds = TimeUnit.MILLISECONDS.toSeconds(millisUntilFinished) % 60;
-                
-                String time = String.format("%02d:%02d:%02d", hours, minutes, seconds);
-                if (tvStreakTimer != null) tvStreakTimer.setText(time);
-                
-                int progress = (int) ((millisUntilFinished * 100) / totalDayMillis);
-                if (streakProgressBar != null) streakProgressBar.setProgress(progress);
 
-                // Logic for reminders
-                checkReminders(millisUntilFinished, sixHoursMillis);
+                String time = String.format("%02d:%02d:%02d", hours, minutes, seconds);
+                tvStreakTimer.setText(time);
+
+                int progress = (int) ((millisUntilFinished * 100L) / totalDayMillis);
+                streakProgressBar.setProgress(progress);
+
+                checkReminders(millisUntilFinished);
             }
+
+            @Override
             public void onFinish() {
                 if (!isAdded() || getContext() == null) return;
 
-                if (tvStreakTimer != null) tvStreakTimer.setText("00:00:00");
-                if (streakProgressBar != null) streakProgressBar.setProgress(0);
+                tvStreakTimer.setText("00:00:00");
+                streakProgressBar.setProgress(0);
                 dailyNotified = false;
                 streakWarningNotified = false;
-                setupGlobalTimer(); // Restart for next day
+
+                // For demo + real, we do not forcibly change streaks here.
+                // Streaks are computed from proofs via HomeFragment.
+                setupGlobalTimer();
             }
         }.start();
     }
-    
+
     @Override
     public void onDestroyView() {
         super.onDestroyView();
@@ -191,314 +258,440 @@ public class DashboardFragment extends Fragment {
         }
     }
 
-    private void checkReminders(long millisUntilFinished, long sixHoursMillis) {
+    // ---------------------------
+    // REMINDER LOGIC
+    // ---------------------------
+    private void checkReminders(long millisUntilFinished) {
         if (!isAdded() || getActivity() == null) return;
-        SharedPreferences prefs = requireActivity().getSharedPreferences("settings", Context.MODE_PRIVATE);
+
+        SharedPreferences prefs =
+                requireActivity().getSharedPreferences("settings", Context.MODE_PRIVATE);
         boolean dailyEnabled = prefs.getBoolean("daily_reminder", true);
         boolean streakEnabled = prefs.getBoolean("streak_warning", false);
 
-        // Check if streak maintained today
-        boolean maintainedToday = false;
-        if (currentUser != null) {
-            Calendar last = Calendar.getInstance();
-            last.setTimeInMillis(currentUser.lastStreakUpdate);
-            Calendar now = Calendar.getInstance();
-            maintainedToday = last.get(Calendar.YEAR) == now.get(Calendar.YEAR) &&
-                              last.get(Calendar.DAY_OF_YEAR) == now.get(Calendar.DAY_OF_YEAR);
-        }
-        
-        // If maintained today, do not send warnings
-        if (maintainedToday) return;
+        boolean maintainedThisWindow = false;
 
-        // 6 hours left (allow some buffer for timer tick)
-        if (millisUntilFinished <= sixHoursMillis && millisUntilFinished > (sixHoursMillis - 60000)) {
+        // In DEMO mode, always allow reminders every minute,
+        // so we skip the "already done in this window" check.
+        if (!DEMO_MODE && currentUser != null && currentUser.lastStreakUpdate != 0L) {
+            long now = System.currentTimeMillis();
+            long diff = now - currentUser.lastStreakUpdate;
+
+            // "Same day" = within current window (24h in real)
+            maintainedThisWindow = diff >= 0 && diff < DAY_WINDOW_MILLIS;
+        }
+
+        // In real mode: If user already did something in this window, no warning needed
+        if (!DEMO_MODE && maintainedThisWindow) return;
+
+        if (millisUntilFinished <= WARNING_WINDOW_MILLIS) {
+
             if (dailyEnabled && !dailyNotified) {
-                sendNotification("Daily reminder", "A new day to continue your streak!");
+                sendNotification(
+                        DEMO_MODE ? "Demo daily reminder" : "Daily reminder",
+                        DEMO_MODE
+                                ? "Demo: your 1-minute day is about to end."
+                                : "A new day to continue your streak!"
+                );
                 dailyNotified = true;
             }
-            // Only warn if there's an active streak
-            if (streakEnabled && !streakWarningNotified && currentUser != null && currentUser.streak > 0) {
-                sendNotification("Streak warnings", "Your streak is about to run out!");
+
+            if (streakEnabled
+                    && !streakWarningNotified
+                    && currentUser != null
+                    && currentUser.streak > 0) {
+
+                sendNotification(
+                        DEMO_MODE ? "Demo streak warning" : "Streak warning",
+                        DEMO_MODE
+                                ? "Demo: your streak window is about to end!"
+                                : "Your streak is about to run out!"
+                );
                 streakWarningNotified = true;
             }
         }
     }
 
-    private void setupSpinner() {
-        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(getContext(),
-                R.array.sample_streaks, android.R.layout.simple_spinner_item);
-        
-        String[] options = {"Top Friends", "All Friends"};
-        ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, options);
-        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerStreaks.setAdapter(spinnerAdapter);
+    // ---------------------------
+    // SPINNERS (CATEGORY SELECTION)
+    // ---------------------------
+    private void setupSpinners() {
+        if (getContext() == null) return;
 
-        spinnerStreaks.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+        String[] categories = new String[]{
+                "Fitness",
+                "Learning",
+                "Health",
+                "Creativity",
+                "Productivity"
+        };
+
+        ArrayAdapter<String> catAdapter = new ArrayAdapter<>(
+                requireContext(),
+                android.R.layout.simple_spinner_item,
+                categories
+        );
+        catAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+        spinnerCategory.setAdapter(catAdapter);
+        spinnerBestCategory.setAdapter(catAdapter);
+
+        spinnerCategory.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                loadFriendsStreaks(position == 0); // 0 = Top Friends, 1 = All
+                updateSelectedCategoryStreakUI();
             }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
+
+        spinnerBestCategory.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                updateBestCategoryUI();
+            }
+
             @Override
             public void onNothingSelected(AdapterView<?> parent) {}
         });
     }
 
+    private void updateSelectedCategoryStreakUI() {
+        if (!isAdded() || spinnerCategory.getSelectedItem() == null) return;
+
+        Context ctx = getContext();
+        if (ctx == null) return;
+
+        String selected = spinnerCategory.getSelectedItem().toString();
+        int current = getCurrentForCategory(selected);
+        int lost = getLostForCategory(selected);
+
+        textSelectedCategoryStreak.setText("Streak: " + current + " days");
+
+        boolean canRestore = (currentUser != null
+                && currentUser.restoresLeft > 0
+                && lost > 0);
+
+        btnRestore.setEnabled(canRestore);
+
+        btnRestore.setBackgroundTintList(
+                ContextCompat.getColorStateList(
+                        ctx,
+                        canRestore ? android.R.color.holo_green_dark : android.R.color.darker_gray
+                )
+        );
+
+        if (currentUser != null) {
+            restoresLeftView.setText(
+                    "Restores left this month: " + currentUser.restoresLeft + " / 3"
+            );
+        } else {
+            restoresLeftView.setText("Restores left this month: 0 / 3");
+        }
+    }
+
+    private void updateBestCategoryUI() {
+        if (!isAdded() || spinnerBestCategory.getSelectedItem() == null) return;
+        String selected = spinnerBestCategory.getSelectedItem().toString();
+        int best = getBestForCategory(selected);
+        textBestSelectedStreak.setText(selected + ": " + best + " days");
+    }
+
+    private int getCurrentForCategory(String cat) {
+        switch (cat) {
+            case "Fitness": return fitnessCurrent;
+            case "Learning": return learningCurrent;
+            case "Health": return healthCurrent;
+            case "Creativity": return creativityCurrent;
+            case "Productivity": return productivityCurrent;
+        }
+        return 0;
+    }
+
+    private int getLostForCategory(String cat) {
+        switch (cat) {
+            case "Fitness": return fitnessLost;
+            case "Learning": return learningLost;
+            case "Health": return healthLost;
+            case "Creativity": return creativityLost;
+            case "Productivity": return productivityLost;
+        }
+        return 0;
+    }
+
+    private int getBestForCategory(String cat) {
+        switch (cat) {
+            case "Fitness": return fitnessBest;
+            case "Learning": return learningBest;
+            case "Health": return healthBest;
+            case "Creativity": return creativityBest;
+            case "Productivity": return productivityBest;
+        }
+        return 0;
+    }
+
+    // ---------------------------
+    // LOAD USER + CATEGORY STREAKS
+    // ---------------------------
     private void loadUserData() {
+        mDatabase.child("users").child(currentUid)
+                .addValueEventListener(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        currentUser = snapshot.getValue(User.class);
+                        if (currentUser == null) return;
+
+                        // 1) Sync CURRENT streaks from /users/{uid}
+                        //    These are written by HomeFragment's computeStreak()
+                        fitnessCurrent = currentUser.fitnessStreak;
+                        learningCurrent = currentUser.learningStreak;
+                        healthCurrent = currentUser.healthStreak;
+                        creativityCurrent = currentUser.creativityStreak;
+                        productivityCurrent = currentUser.productivityStreak;
+
+                        // 2) Monthly restore reset
+                        checkMonthlyRestoreReset();
+
+                        // 3) Load BEST + LOST per category from /users/{uid}/categoryStreaks
+                        loadCategoryStreaks();
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {}
+                });
+    }
+
+    private void loadCategoryStreaks() {
         if (currentUid == null) return;
 
-        mDatabase.child("users").child(currentUid).addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (!isAdded()) return;
-                currentUser = snapshot.getValue(User.class);
-                if (currentUser != null) {
-                    checkMonthlyRestoreReset();
-                    updateRestoreUI();
-                    loadFriendsStreaks(spinnerStreaks.getSelectedItemPosition() == 0);
-                    checkLoginReminders();
-                }
-            }
+        mDatabase.child("users")
+                .child(currentUid)
+                .child("categoryStreaks")
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        if (!isAdded()) return;
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {}
-        });
+                        // Reset
+                        fitnessLost = learningLost = healthLost = creativityLost = productivityLost = 0;
+                        fitnessBest = learningBest = healthBest = creativityBest = productivityBest = 0;
+
+                        for (DataSnapshot catSnap : snapshot.getChildren()) {
+                            String key = catSnap.getKey();
+                            Integer lost = catSnap.child("lostStreak").getValue(Integer.class);
+                            Integer best = catSnap.child("bestStreak").getValue(Integer.class);
+
+                            int l = (lost != null) ? lost : 0;
+                            int b = (best != null) ? best : 0;
+
+                            // currentFromHome = current streak that HomeFragment computed from proofs
+                            int currentFromHome = 0;
+                            if ("Fitness".equals(key)) {
+                                currentFromHome = fitnessCurrent;
+                            } else if ("Learning".equals(key)) {
+                                currentFromHome = learningCurrent;
+                            } else if ("Health".equals(key)) {
+                                currentFromHome = healthCurrent;
+                            } else if ("Creativity".equals(key)) {
+                                currentFromHome = creativityCurrent;
+                            } else if ("Productivity".equals(key)) {
+                                currentFromHome = productivityCurrent;
+                            }
+
+                            // Lifetime best = max(old best, current streak)
+                            int bestFinal = Math.max(b, currentFromHome);
+
+                            // Save into local variables
+                            if ("Fitness".equals(key)) {
+                                fitnessLost = l;
+                                fitnessBest = bestFinal;
+                            } else if ("Learning".equals(key)) {
+                                learningLost = l;
+                                learningBest = bestFinal;
+                            } else if ("Health".equals(key)) {
+                                healthLost = l;
+                                healthBest = bestFinal;
+                            } else if ("Creativity".equals(key)) {
+                                creativityLost = l;
+                                creativityBest = bestFinal;
+                            } else if ("Productivity".equals(key)) {
+                                productivityLost = l;
+                                productivityBest = bestFinal;
+                            }
+
+                            // If we improved the best, write it back to Firebase
+                            if (bestFinal != b) {
+                                catSnap.getRef().child("bestStreak").setValue(bestFinal);
+                            }
+                        }
+
+                        updateSelectedCategoryStreakUI();
+                        updateBestCategoryUI();
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {}
+                });
     }
 
-    private void checkLoginReminders() {
-        if (!isAdded() || getActivity() == null || currentUser == null) return;
-
-        // Prevent showing multiple times per user session
-        if (currentUid != null && currentUid.equals(reminderShownForUid)) return;
-
-        SharedPreferences prefs = requireActivity().getSharedPreferences("settings", Context.MODE_PRIVATE);
-        boolean dailyEnabled = prefs.getBoolean("daily_reminder", true);
-        boolean streakEnabled = prefs.getBoolean("streak_warning", false);
-
-        // Check if streak maintained today
-        Calendar last = Calendar.getInstance();
-        last.setTimeInMillis(currentUser.lastStreakUpdate);
-        Calendar now = Calendar.getInstance();
-        boolean maintainedToday = last.get(Calendar.YEAR) == now.get(Calendar.YEAR) &&
-                last.get(Calendar.DAY_OF_YEAR) == now.get(Calendar.DAY_OF_YEAR);
-
-        if (!maintainedToday) {
-            if (dailyEnabled) {
-                String msg = "Daily reminder: A new day to continue your streak!";
-                Toast.makeText(getContext(), msg, Toast.LENGTH_LONG).show();
-                sendNotification("Daily reminder", "A new day to continue your streak!");
-            }
-            
-            // Check if streak is active (from yesterday)
-            if (streakEnabled && currentUser.streak > 0) {
-                String msg = "Streak warnings: Your streak is about to run out!";
-                Toast.makeText(getContext(), msg, Toast.LENGTH_LONG).show();
-                sendNotification("Streak warnings", "Your streak is about to run out!");
-            }
-        }
-
-        reminderShownForUid = currentUid;
-    }
-
-    // Restore reset logic: Every month reset to 3, do not stack
+    // ---------------------------
+    // MONTHLY RESET FOR RESTORES
+    // ---------------------------
     private void checkMonthlyRestoreReset() {
-        if (currentUser == null) return;
-        
+        if (currentUser == null || currentUid == null) return;
+
         Calendar now = Calendar.getInstance();
         Calendar lastReset = Calendar.getInstance();
         lastReset.setTimeInMillis(currentUser.lastRestoreReset);
-        
-        // If never reset (0) or different month/year
-        if (currentUser.lastRestoreReset == 0 || 
-            now.get(Calendar.MONTH) != lastReset.get(Calendar.MONTH) ||
-            now.get(Calendar.YEAR) != lastReset.get(Calendar.YEAR)) {
-            
-            // Reset to 3
+
+        if (currentUser.lastRestoreReset == 0L
+                || now.get(Calendar.MONTH) != lastReset.get(Calendar.MONTH)
+                || now.get(Calendar.YEAR) != lastReset.get(Calendar.YEAR)) {
+
             currentUser.restoresLeft = 3;
             currentUser.lastRestoreReset = now.getTimeInMillis();
-            
+
             Map<String, Object> updates = new HashMap<>();
             updates.put("restoresLeft", 3);
             updates.put("lastRestoreReset", now.getTimeInMillis());
-            
+
             mDatabase.child("users").child(currentUid).updateChildren(updates);
         }
+
+        restoresLeftView.setText("Restores left this month: " + currentUser.restoresLeft + " / 3");
     }
 
-    private void loadFriendsStreaks(boolean topOnly) {
-        if (currentUid == null || streaksContainer == null) return;
-
-        mDatabase.child("users").child(currentUid).child("friends").addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (!isAdded()) return;
-                List<String> uids = new ArrayList<>();
-                uids.add(currentUid); // Add self
-                for (DataSnapshot s : snapshot.getChildren()) {
-                    uids.add(s.getKey());
-                }
-                fetchUsersAndDisplay(uids, topOnly);
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {}
-        });
-    }
-
-    private void fetchUsersAndDisplay(List<String> uids, boolean topOnly) {
-        List<User> users = new ArrayList<>();
-        // Helper counter to know when all data is fetched
-        final int[] loadedCount = {0};
-
-        for (String uid : uids) {
-            mDatabase.child("users").child(uid).addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot snapshot) {
-                    if (!isAdded()) return;
-                    User u = snapshot.getValue(User.class);
-                    if (u != null) {
-                        if (u.uid == null) u.uid = uid;
-                        users.add(u);
-                    }
-                    loadedCount[0]++;
-                    if (loadedCount[0] == uids.size()) {
-                        updateStreaksList(users, topOnly);
-                    }
-                }
-
-                @Override
-                public void onCancelled(@NonNull DatabaseError error) {
-                    loadedCount[0]++;
-                }
-            });
-        }
-    }
-
-    private void updateStreaksList(List<User> users, boolean topOnly) {
-        if (getContext() == null) return;
-        Collections.sort(users, (u1, u2) -> Integer.compare(u2.streak, u1.streak));
-
-        // Clear previous list except the title and spinner row (indices 0)
-        int childCount = streaksContainer.getChildCount();
-        if (childCount > 1) {
-            streaksContainer.removeViews(1, childCount - 1);
-        }
-
-        int limit = topOnly ? Math.min(3, users.size()) : users.size();
-
-        for (int i = 0; i < limit; i++) {
-            User u = users.get(i);
-            TextView tv = new TextView(getContext());
-            String text = u.fullName + " - " + u.streak + " days";
-            if (u.uid != null && u.uid.equals(currentUid)) {
-                text += " (You)";
-                tv.setTypeface(null, android.graphics.Typeface.BOLD);
-            }
-            tv.setText(text);
-            tv.setTextSize(16);
-            tv.setTextColor(getResources().getColor(android.R.color.black));
-            tv.setPadding(0, 0, 0, 16); // bottom padding
-
-            streaksContainer.addView(tv);
-        }
-    }
-
-    private void updateRestoreUI() {
-        if (currentUser == null || getContext() == null) return;
-
-        lostStreakMessage.setText("Lost Streak: " + currentUser.lostStreak + " days");
-        restoresLeftView.setText("Restores left for this month: " + currentUser.restoresLeft);
-        
-        // Check if streak maintained today
-        Calendar last = Calendar.getInstance();
-        last.setTimeInMillis(currentUser.lastStreakUpdate);
-        Calendar now = Calendar.getInstance();
-        
-        boolean sameDay = last.get(Calendar.YEAR) == now.get(Calendar.YEAR) &&
-                          last.get(Calendar.DAY_OF_YEAR) == now.get(Calendar.DAY_OF_YEAR);
-
-        if (sameDay) {
-             // Streak maintained today, no need to restore
-             btnRestore.setEnabled(false);
-             btnRestore.setText("Streak Maintained");
-             btnRestore.setBackgroundTintList(getContext().getColorStateList(android.R.color.darker_gray));
-        } else {
-            if (currentUser.restoresLeft > 0 && currentUser.lostStreak > 0) {
-                btnRestore.setEnabled(true);
-                btnRestore.setText("Restore Streak");
-                btnRestore.setBackgroundTintList(getContext().getColorStateList(android.R.color.holo_green_dark));
-            } else {
-                btnRestore.setEnabled(false);
-                btnRestore.setText("Restore Streak");
-                btnRestore.setBackgroundTintList(getContext().getColorStateList(android.R.color.darker_gray));
-            }
-        }
-    }
-
+    // ---------------------------
+    // PER-CATEGORY RESTORE
+    // ---------------------------
     private void restoreStreak() {
-        if (currentUser == null || currentUser.restoresLeft <= 0 || currentUser.lostStreak <= 0) return;
-        
-        // Double check if maintained today
-        Calendar last = Calendar.getInstance();
-        last.setTimeInMillis(currentUser.lastStreakUpdate);
-        Calendar now = Calendar.getInstance();
-        boolean sameDay = last.get(Calendar.YEAR) == now.get(Calendar.YEAR) &&
-                          last.get(Calendar.DAY_OF_YEAR) == now.get(Calendar.DAY_OF_YEAR);
-        
-        if (sameDay) {
-            Toast.makeText(getContext(), "Streak already maintained for today.", Toast.LENGTH_SHORT).show();
+        if (currentUser == null || currentUid == null) {
+            Toast.makeText(getContext(), "User not loaded.", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        int newStreak = currentUser.streak + currentUser.lostStreak;
-        int newRestores = currentUser.restoresLeft - 1;
+        if (currentUser.restoresLeft <= 0) {
+            Toast.makeText(getContext(), "No restores left this month.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (spinnerCategory.getSelectedItem() == null) {
+            Toast.makeText(getContext(), "Select a category first.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String selected = spinnerCategory.getSelectedItem().toString();
+        int lost = getLostForCategory(selected);
+        int current = getCurrentForCategory(selected);
+
+        if (lost <= 0) {
+            Toast.makeText(getContext(), "No lost streak to restore for " + selected + ".", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        int newCurrent = current + lost;
         int newLost = 0;
 
-        // Update local object
-        currentUser.streak = newStreak;
-        currentUser.restoresLeft = newRestores;
-        currentUser.lostStreak = newLost;
+        setCurrentForCategory(selected, newCurrent);
+        setLostForCategory(selected, newLost);
 
-        // Update Firebase
-        mDatabase.child("users").child(currentUid).child("streak").setValue(newStreak);
-        mDatabase.child("users").child(currentUid).child("restoresLeft").setValue(newRestores);
-        mDatabase.child("users").child(currentUid).child("lostStreak").setValue(newLost)
-                .addOnSuccessListener(aVoid -> {
-                    Toast.makeText(getContext(), "Streak Restored! 🔥", Toast.LENGTH_SHORT).show();
-                    logActivity("Streak Restored", "Restored a streak of " + (newStreak - currentUser.streak) + " days.");
-                    updateRestoreUI();
-                });
+        currentUser.restoresLeft = currentUser.restoresLeft - 1;
+
+        Map<String, Object> catUpdates = new HashMap<>();
+        catUpdates.put("currentStreak", newCurrent);
+        catUpdates.put("lostStreak", newLost);
+
+        mDatabase.child("users")
+                .child(currentUid)
+                .child("categoryStreaks")
+                .child(selected)
+                .updateChildren(catUpdates);
+
+        mDatabase.child("users")
+                .child(currentUid)
+                .child("restoresLeft")
+                .setValue(currentUser.restoresLeft);
+
+        logActivity("Streak Restored",
+                "Restored " + lost + " days for " + selected + ".");
+
+        Toast.makeText(getContext(), "Streak restored for " + selected + "!", Toast.LENGTH_SHORT).show();
+
+        updateSelectedCategoryStreakUI();
+    }
+
+    private void setCurrentForCategory(String cat, int value) {
+        switch (cat) {
+            case "Fitness": fitnessCurrent = value; break;
+            case "Learning": learningCurrent = value; break;
+            case "Health": healthCurrent = value; break;
+            case "Creativity": creativityCurrent = value; break;
+            case "Productivity": productivityCurrent = value; break;
+        }
+    }
+
+    private void setLostForCategory(String cat, int value) {
+        switch (cat) {
+            case "Fitness": fitnessLost = value; break;
+            case "Learning": learningLost = value; break;
+            case "Health": healthLost = value; break;
+            case "Creativity": creativityLost = value; break;
+            case "Productivity": productivityLost = value; break;
+        }
     }
 
     private void logActivity(String title, String description) {
         if (currentUid == null) return;
-        String key = mDatabase.child("activities").child(currentUid).push().getKey();
+
+        String key = mDatabase.child("activities")
+                .child(currentUid)
+                .push()
+                .getKey();
+
         if (key == null) return;
 
-        UserActivity activity = new UserActivity(title, description, System.currentTimeMillis());
-        mDatabase.child("activities").child(currentUid).child(key).setValue(activity);
+        UserActivity activity =
+                new UserActivity(title, description, System.currentTimeMillis());
+
+        mDatabase.child("activities")
+                .child(currentUid)
+                .child(key)
+                .setValue(activity);
     }
 
+    // ---------------------------
+    // SWITCHES (SETTINGS)
+    // ---------------------------
     private void loadSwitchStates() {
         if (!isAdded() || getActivity() == null) return;
-        SharedPreferences prefs = requireActivity().getSharedPreferences("settings", Context.MODE_PRIVATE);
+
+        SharedPreferences prefs =
+                requireActivity().getSharedPreferences("settings", Context.MODE_PRIVATE);
+
         toggleDailySwitch.setChecked(prefs.getBoolean("daily_reminder", true));
         toggleStreakSwitch.setChecked(prefs.getBoolean("streak_warning", false));
     }
 
     private void saveSwitchState(String key, boolean value) {
         if (!isAdded() || getActivity() == null) return;
-        SharedPreferences prefs = requireActivity().getSharedPreferences("settings", Context.MODE_PRIVATE);
+
+        SharedPreferences prefs =
+                requireActivity().getSharedPreferences("settings", Context.MODE_PRIVATE);
+
         prefs.edit().putBoolean(key, value).apply();
 
-        if (value) {
-            if (key.equals("daily_reminder")) {
-                Toast.makeText(getContext(), "Daily reminder: A new day to continue your streak!", Toast.LENGTH_SHORT).show();
-            } else if (key.equals("streak_warning")) {
-                Toast.makeText(getContext(), "Streak warnings: Your streak is about to run out!", Toast.LENGTH_SHORT).show();
-            }
+        String label;
+        if ("daily_reminder".equals(key)) {
+            label = "Daily reminders";
+        } else if ("streak_warning".equals(key)) {
+            label = "Streak warnings";
         } else {
-            String type = key.equals("daily_reminder") ? "Daily reminders" : "Streak warnings";
-            Toast.makeText(getContext(), type + " disabled", Toast.LENGTH_SHORT).show();
+            label = "Setting";
         }
+
+        Toast.makeText(getContext(),
+                label + (value ? " enabled" : " disabled"),
+                Toast.LENGTH_SHORT).show();
     }
 }
